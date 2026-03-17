@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProfileManagement from "../pages/ProfileManagement";
+import Login from "../pages/auth/Login";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 
 import type { User } from "../types/user";
 
@@ -11,7 +14,7 @@ const dummyUser: User = {
   alamat: "123 Main St",
   nomor_telepon: "123-456-7890",
   foto: null,
-  type: "ADMIN",
+  type: "Admin",
 };
 
 export function Router() {
@@ -21,6 +24,18 @@ export function Router() {
         <Route
           path="/profile"
           element={<ProfileManagement userData={dummyUser} />}
+        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="*"
+          element={
+            <div style={{ padding: "20px", textAlign: "center" }}>
+              <h2>404 - Page Not Found</h2>
+              <p>The page you are looking for does not exist.</p>
+            </div>
+          }
         />
       </Routes>
     </BrowserRouter>
