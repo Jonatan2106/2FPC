@@ -15,6 +15,7 @@ interface ProfilePageProps {
   userData: User | Staff;
 }
 
+
 const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
   const isStaff = "salary" in userData;
   const initialUser: User = isStaff ? userData.user : (userData as User);
