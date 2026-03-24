@@ -8,6 +8,8 @@ import type { User } from "../types/user";
 import CreateUser from "../pages/CreateAccountAdmin";
 import LeaveRequest from "../pages/LeaveManagementRequest";
 import ViewAttendance from "../pages/AttendanceView";
+import ReimburseList from "../reimburse/ReimburseList";
+import CreateReimburse from "../reimburse/CreateReimburse";
 
 const dummyUser: User = {
   user_id: "u001",
@@ -17,6 +19,7 @@ const dummyUser: User = {
   alamat: "123 Main St",
   nomor_telepon: "123-456-7890",
   foto: null,
+  salary: 5000,
   type: "Admin",
 };
 
@@ -40,6 +43,8 @@ export function Router() {
             </div>
           }
         />
+        <Route path="/reimburse-list" element={<ReimburseList />} />
+        <Route path="/request-reimburse" element={<CreateReimburse />} />
         <Route path="/create-account" element={<CreateUser />} />
         <Route path="/leave-request" element={<LeaveRequest />} />
         <Route path="/attendance-view" element={<ViewAttendance />} />
