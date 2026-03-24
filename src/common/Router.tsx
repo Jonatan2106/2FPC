@@ -5,6 +5,8 @@ import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 
 import type { User } from "../types/user";
+import ReimburseList from "../reimburse/ReimburseList";
+import CreateReimburse from "../reimburse/CreateReimburse";
 
 const dummyUser: User = {
   user_id: "u001",
@@ -37,6 +39,8 @@ export function Router() {
             </div>
           }
         />
+        <Route path="/reimburse-list" element={<ReimburseList />} />
+        <Route path="/request-reimburse" element={<CreateReimburse />} />
       </Routes>
     </BrowserRouter>
   );
