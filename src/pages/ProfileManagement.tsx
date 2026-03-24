@@ -6,7 +6,6 @@ import {
   Container,
   Paper,
   Box,
-  Typography,
 } from "@mui/material";
 import type { User } from "../types/user";
 import type { Staff } from "../types/staff";
@@ -17,8 +16,8 @@ interface ProfilePageProps {
 
 
 const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
-  const isStaff = "salary" in userData;
-  const initialUser: User = isStaff ? userData.user : (userData as User);
+  const isStaff = "role" in userData;
+const initialUser: User = isStaff ? userData.user : userData;
   const [user, setUser] = useState<User>({ ...initialUser });
   const [editing, setEditing] = useState(false);
 
@@ -107,12 +106,6 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
                 label="Role"
                 fullWidth
                 value={userData.role}
-                disabled
-              />
-              <TextField
-                label="Salary"
-                fullWidth
-                value={userData.salary.toString()}
                 disabled
               />
             </Box>
