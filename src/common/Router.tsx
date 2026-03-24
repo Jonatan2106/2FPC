@@ -5,6 +5,9 @@ import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 
 import type { User } from "../types/user";
+import CreateUser from "../pages/CreateAccountAdmin";
+import LeaveRequest from "../pages/LeaveManagementRequest";
+import ViewAttendance from "../pages/AttendanceView";
 
 const dummyUser: User = {
   user_id: "u001",
@@ -37,6 +40,9 @@ export function Router() {
             </div>
           }
         />
+        <Route path="/create-account" element={<CreateUser />} />
+        <Route path="/leave-request" element={<LeaveRequest />} />
+        <Route path="/attendance-view" element={<ViewAttendance />} />
       </Routes>
     </BrowserRouter>
   );

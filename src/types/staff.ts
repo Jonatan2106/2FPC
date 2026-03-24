@@ -2,9 +2,10 @@ import type { User } from "./user";
 
 export type Staff = {
   user: User;
-  salary: number;
+  QR: string;
   hire_date: Date;
   role: 'STAFF' | 'MANAGER';
+  department_id: string;
   roleBehavior: RoleBehavior;
   manager_id: string | null;
 };
