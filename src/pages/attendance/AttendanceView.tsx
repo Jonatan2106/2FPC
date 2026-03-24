@@ -55,6 +55,7 @@ const ViewAttendance: React.FC = () => {
         py: 4,
       }}
     >
+      
       {/* Branding */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight="bold">
