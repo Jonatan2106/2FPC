@@ -7,8 +7,8 @@ import {
   Paper,
   Box,
 } from "@mui/material";
-import type { User } from "../types/user";
-import type { Staff } from "../types/staff";
+import type { User } from "../../types/user";
+import type { Staff } from "../../types/staff";
 
 interface ProfilePageProps {
   userData: User | Staff;

@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ProfileManagement from "../pages/ProfileManagement";
+import ProfileManagement from "../pages/profile/ProfileManagement";
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 
 import type { User } from "../types/user";
-import CreateUser from "../pages/CreateAccountAdmin";
-import LeaveRequest from "../pages/LeaveManagementRequest";
-import ViewAttendance from "../pages/AttendanceView";
+import CreateUser from "../pages/profile/CreateAccountAdmin";
+import LeaveRequest from "../pages/leave/LeaveManagementRequest";
+import ViewAttendance from "../pages/attendance/AttendanceView";
 import ReimburseList from "../reimburse/ReimburseList";
 import CreateReimburse from "../reimburse/CreateReimburse";
+import HomePage from "../pages/HomePage";
 
 const dummyUser: User = {
   user_id: "u001",
@@ -27,6 +28,7 @@ export function Router() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<HomePage user={dummyUser}/>} />
         <Route
           path="/profile"
           element={<ProfileManagement userData={dummyUser} />}
@@ -44,7 +46,7 @@ export function Router() {
           }
         />
         <Route path="/reimburse-list" element={<ReimburseList />} />
-        <Route path="/request-reimburse" element={<CreateReimburse />} />
+        <Route path="/reimburse" element={<CreateReimburse />} />
         <Route path="/create-account" element={<CreateUser />} />
         <Route path="/leave-request" element={<LeaveRequest />} />
         <Route path="/attendance-view" element={<ViewAttendance />} />
