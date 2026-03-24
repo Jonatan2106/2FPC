@@ -11,6 +11,7 @@ import ViewAttendance from "../pages/attendance/AttendanceView";
 import ReimburseList from "../reimburse/ReimburseList";
 import CreateReimburse from "../reimburse/CreateReimburse";
 import HomePage from "../pages/HomePage";
+import LeaveManagement from "../pages/LeaveManagement";
 
 const dummyUser: User = {
   user_id: "u001",
@@ -50,6 +51,7 @@ export function Router() {
         <Route path="/create-account" element={<CreateUser />} />
         <Route path="/leave-request" element={<LeaveRequest />} />
         <Route path="/attendance-view" element={<ViewAttendance />} />
+        <Route path="/leave-management-list" element={<LeaveManagement />} />
       </Routes>
     </BrowserRouter>
   );
