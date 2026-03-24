@@ -7,4 +7,5 @@ export type User = {
   nomor_telepon?: string;
   foto?: string | null;
   type: "Admin" | "Staff";
+  salary: number;
 };
