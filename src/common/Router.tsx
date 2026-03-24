@@ -5,6 +5,9 @@ import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
 
 import type { User } from "../types/user";
+import CreateUser from "../pages/CreateAccountAdmin";
+import LeaveRequest from "../pages/LeaveManagementRequest";
+import ViewAttendance from "../pages/AttendanceView";
 import ReimburseList from "../reimburse/ReimburseList";
 import CreateReimburse from "../reimburse/CreateReimburse";
 
@@ -39,8 +42,6 @@ export function Router() {
             </div>
           }
         />
-        <Route path="/reimburse-list" element={<ReimburseList />} />
-        <Route path="/request-reimburse" element={<CreateReimburse />} />
       </Routes>
     </BrowserRouter>
   );
