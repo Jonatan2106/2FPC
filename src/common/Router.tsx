@@ -19,6 +19,7 @@ const dummyUser: User = {
   alamat: "123 Main St",
   nomor_telepon: "123-456-7890",
   foto: null,
+  salary: 5000,
   type: "Admin",
 };
 
@@ -42,6 +43,11 @@ export function Router() {
             </div>
           }
         />
+        <Route path="/reimburse-list" element={<ReimburseList />} />
+        <Route path="/request-reimburse" element={<CreateReimburse />} />
+        <Route path="/create-account" element={<CreateUser />} />
+        <Route path="/leave-request" element={<LeaveRequest />} />
+        <Route path="/attendance-view" element={<ViewAttendance />} />
       </Routes>
     </BrowserRouter>
   );
