@@ -3,8 +3,9 @@ export type User = {
   name: string;
   email: string;
   password: string;
-  alamat: string;
-  nomor_telepon: string;
-  foto: string | null;
-  type: 'ADMIN' | 'STAFF';
+  alamat?: string;
+  nomor_telepon?: string;
+  foto?: string | null;
+  type: "Admin" | "Staff";
+  salary: number;
 };
