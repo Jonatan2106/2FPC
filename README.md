@@ -43,6 +43,87 @@ export default defineConfig([
 ])
 ```
 
+## Backend API (Deploy Ready)
+
+Backend Express tersedia di `src/backend` dan bisa dipakai untuk aplikasi Flutter/Android.
+
+### Jalankan backend lokal
+
+```bash
+npm run backend:start
+```
+
+### Environment variables wajib
+
+Buat file `.env` di root:
+
+```env
+PORT=8080
+JWT_SECRET=replace-with-strong-secret
+
+# Opsi A (disarankan saat hosting)
+DATABASE_URL=postgres://user:password@host:5432/dbname
+DB_SSL=true
+
+# Opsi B (lokal)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASS=postgres
+
+CORS_ORIGIN=http://localhost:5173,http://localhost:3000
+```
+
+### Health check
+
+- `GET /health`
+
+### Base path API
+
+- Semua endpoint backend dimount ke `/api`
+
+## QR Attendance Flow
+
+### 1) Login
+
+- `GET /api/auth/login?username=...&password=...`
+- Response sudah berisi JWT token.
+
+### 2) Generate QR absensi
+
+- `GET /api/attendance/qr`
+- Header: `Authorization: Bearer <token>`
+- Response berisi:
+  - `qr_token` (JWT, expired 2 menit)
+  - `qr_data_url` (base64 PNG)
+
+### 3) Clock in via scan QR
+
+- `POST /api/attendance/clock-in/qr-scan`
+- Header: `Authorization: Bearer <token>`
+- Body:
+
+```json
+{
+  "qr_token": "..."
+}
+```
+
+## Rekomendasi hosting
+
+Untuk tugas ini paling cocok:
+
+1. Backend: Render atau Railway
+2. Database: Neon Postgres atau Supabase Postgres
+3. Storage bukti/foto (opsional): Cloudinary atau Supabase Storage
+
+Alasan:
+
+1. Setup cepat untuk project kampus
+2. Dapat URL HTTPS publik untuk mobile app
+3. DB managed sehingga maintenance ringan
+
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
