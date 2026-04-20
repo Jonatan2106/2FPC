@@ -6,29 +6,46 @@ import {
   Button,
   MenuItem,
   Link,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import { userApi } from "../../services/api";
 
 const CreateUser: React.FC = () => {
   const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [salary, setSalary] = React.useState("");
-  const [role, setRole] = React.useState("staff");
+  const [role, setRole] = React.useState<"Staff" | "Manager">("Staff");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [success, setSuccess] = React.useState(false);
 
-  const handleCreateUser = () => {
-    if (!name || !email || !salary || !role) {
-      alert("Please fill all fields");
+  const handleCreateUser = async () => {
+    if (!name) {
+      setError("Name is required");
       return;
     }
 
-    const payload = {
-      name,
-      email,
-      salary: Number(salary),
-      role,
-    };
+    setLoading(true);
+    setError("");
+    setSuccess(false);
 
-    console.log("Create User:", payload);
-    // TODO: call API
+    try {
+      const response = await userApi.createStaffAccount(name, role);
+
+      if (response.message === "Staff account created") {
+        setSuccess(true);
+        setName("");
+        setRole("Staff");
+        // Reset success message after 2 seconds
+        setTimeout(() => setSuccess(false), 2000);
+      } else {
+        setError(response.message || "Failed to create user");
+      }
+    } catch (err) {
+      setError("An error occurred while creating the user");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,28 +83,16 @@ const CreateUser: React.FC = () => {
           Create New User
         </Typography>
 
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">User created successfully!</Alert>}
+
         <TextField
           label="Full Name"
           fullWidth
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoFocus
-        />
-
-        <TextField
-          label="Email"
-          type="email"
-          fullWidth
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <TextField
-          label="Salary"
-          type="number"
-          fullWidth
-          value={salary}
-          onChange={(e) => setSalary(e.target.value)}
+          disabled={loading}
         />
 
         <TextField
@@ -95,14 +100,20 @@ const CreateUser: React.FC = () => {
           label="Role"
           fullWidth
           value={role}
-          onChange={(e) => setRole(e.target.value)}
+          onChange={(e) => setRole(e.target.value as "Staff" | "Manager")}
+          disabled={loading}
         >
-          <MenuItem value="staff">Staff</MenuItem>
-          <MenuItem value="manager">Manager</MenuItem>
+          <MenuItem value="Staff">Staff</MenuItem>
+          <MenuItem value="Manager">Manager</MenuItem>
         </TextField>
 
-        <Button variant="contained" size="large" onClick={handleCreateUser}>
-          Create User
+        <Button
+          variant="contained"
+          size="large"
+          onClick={handleCreateUser}
+          disabled={loading}
+        >
+          {loading ? <CircularProgress size={24} /> : "Create User"}
         </Button>
 
         <Link href="/dashboard" textAlign="center">

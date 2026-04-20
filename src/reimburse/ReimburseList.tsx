@@ -10,44 +10,89 @@ import {
   Button,
   Chip,
   Drawer,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 
 import type { Reimburse } from "../types/reimburse";
-
-const mockData: Reimburse[] = [
-  {
-    reimburse_id: "1",
-    amount: 120,
-    approve: "PENDING",
-    evidence: "https://via.placeholder.com/300",
-    user_id: "u1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { reimburseApi } from "../services/api";
 
 const ReimburseList: React.FC = () => {
-  const [data, setData] = React.useState<Reimburse[]>(mockData);
+  const [data, setData] = React.useState<Reimburse[]>([]);
   const [selected, setSelected] = React.useState<Reimburse | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState("");
+  const [actionLoading, setActionLoading] = React.useState(false);
 
-  const handleApprove = (id: string) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.reimburse_id === id
-          ? { ...item, approve: "APPROVED", approvedAt: new Date() }
-          : item
-      )
-    );
+  React.useEffect(() => {
+    // Load reimburse data - using mockData for now as backend doesn't have GET endpoint
+    // In real scenario, you'd call an API endpoint
+    setData([
+      {
+        reimburse_id: "1",
+        amount: 120,
+        approve: "PENDING",
+        evidence: "https://via.placeholder.com/300",
+        user_id: "u1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    setLoading(false);
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    if (actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      const response = await reimburseApi.approveOrDeclineReimburse(id, "approved");
+
+      if (response.message && response.message.includes("success")) {
+        setData((prev) =>
+          prev.map((item) =>
+            item.reimburse_id === id
+              ? { ...item, approve: "APPROVED", updatedAt: new Date() }
+              : item
+          )
+        );
+        setSelected(null);
+      } else {
+        setError(response.message || "Failed to approve reimburse request");
+      }
+    } catch (err) {
+      setError("An error occurred while approving reimburse request");
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = (id: string) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.reimburse_id === id
-          ? { ...item, approve: "REJECTED", approvedAt: new Date() }
-          : item
-      )
-    );
+  const handleReject = async (id: string) => {
+    if (actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      const response = await reimburseApi.approveOrDeclineReimburse(id, "declined");
+
+      if (response.message && response.message.includes("success")) {
+        setData((prev) =>
+          prev.map((item) =>
+            item.reimburse_id === id
+              ? { ...item, approve: "REJECTED", updatedAt: new Date() }
+              : item
+          )
+        );
+        setSelected(null);
+      } else {
+        setError(response.message || "Failed to reject reimburse request");
+      }
+    } catch (err) {
+      setError("An error occurred while rejecting reimburse request");
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -68,205 +113,191 @@ const ReimburseList: React.FC = () => {
           Reimburse Requests
         </Typography>
 
-        {/* Table Container */}
-        <Box
-          sx={{
-            border: "1px solid #e0e0e0",
-            borderRadius: 2,
-            overflow: "hidden",
-            backgroundColor: "#fff",
-          }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: "#fafafa" }}>
-                <TableCell><b>Staff ID</b></TableCell>
-                <TableCell><b>Amount</b></TableCell>
-                <TableCell><b>Evidence</b></TableCell>
-                <TableCell><b>Status</b></TableCell>
-                <TableCell><b>Created At</b></TableCell>
-                <TableCell><b>Approved At</b></TableCell>
-                <TableCell align="right"><b>Actions</b></TableCell>
-              </TableRow>
-            </TableHead>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-            <TableBody>
-              {data.map((r) => (
-                <TableRow
-                  key={r.reimburse_id}
-                  hover
-                  sx={{ cursor: "pointer" }}
-                  onClick={() => setSelected(r)}
-                >
-                  <TableCell>{r.user_id}</TableCell>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <>
+            {/* Table Container */}
+            <Box
+              sx={{
+                border: "1px solid #e0e0e0",
+                borderRadius: 2,
+                overflow: "hidden",
+                backgroundColor: "#fff",
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: "#fafafa" }}>
+                    <TableCell><b>Staff ID</b></TableCell>
+                    <TableCell><b>Amount</b></TableCell>
+                    <TableCell><b>Evidence</b></TableCell>
+                    <TableCell><b>Status</b></TableCell>
+                    <TableCell><b>Created At</b></TableCell>
+                    <TableCell><b>Updated At</b></TableCell>
+                    <TableCell align="right"><b>Actions</b></TableCell>
+                  </TableRow>
+                </TableHead>
 
-                  <TableCell>${r.amount.toFixed(2)}</TableCell>
+                <TableBody>
+                  {data.map((r) => (
+                    <TableRow
+                      key={r.reimburse_id}
+                      hover
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => setSelected(r)}
+                    >
+                      <TableCell>{r.user_id}</TableCell>
 
-                  <TableCell>
-                    {r.evidence ? (
-                      <img
-                        src={r.evidence}
-                        alt="evidence"
-                        style={{
-                          width: 50,
-                          height: 50,
-                          objectFit: "cover",
-                          borderRadius: 6,
-                        }}
+                      <TableCell>${r.amount.toFixed(2)}</TableCell>
+
+                      <TableCell>
+                        {r.evidence ? (
+                          <img
+                            src={r.evidence}
+                            alt="evidence"
+                            style={{
+                              width: 50,
+                              height: 50,
+                              objectFit: "cover",
+                              borderRadius: 6,
+                            }}
+                          />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        <Chip
+                          label={r.approve}
+                          color={
+                            r.approve === "APPROVED"
+                              ? "success"
+                              : r.approve === "REJECTED"
+                              ? "error"
+                              : "warning"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </TableCell>
+
+                      <TableCell>
+                        {new Date(r.updatedAt).toLocaleDateString()}
+                      </TableCell>
+
+                      <TableCell align="right">
+                        {r.approve === "PENDING" && (
+                          <>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              sx={{ mr: 1 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApprove(r.reimburse_id);
+                              }}
+                              disabled={actionLoading}
+                            >
+                              Approve
+                            </Button>
+
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReject(r.reimburse_id);
+                              }}
+                              disabled={actionLoading}
+                            >
+                              Reject
+                            </Button>
+                          </>
+                        )}
+
+                        <Button
+                          size="small"
+                          sx={{ ml: 1 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelected(r);
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+
+            {/* DRAWER */}
+            <Drawer
+              anchor="right"
+              open={!!selected}
+              onClose={() => setSelected(null)}
+            >
+              <Box sx={{ width: 400, p: 3 }}>
+                {selected && (
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <Typography variant="h6">Reimburse Details</Typography>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Reimburse ID
+                      </Typography>
+                      <Typography>{selected.reimburse_id}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Amount
+                      </Typography>
+                      <Typography>${selected.amount.toFixed(2)}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Status
+                      </Typography>
+                      <Chip
+                        label={selected.approve}
+                        color={
+                          selected.approve === "APPROVED"
+                            ? "success"
+                            : selected.approve === "REJECTED"
+                            ? "error"
+                            : "warning"
+                        }
+                        size="small"
                       />
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={r.approve}
-                      color={
-                        r.approve === "APPROVED"
-                          ? "success"
-                          : r.approve === "REJECTED"
-                          ? "error"
-                          : "warning"
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </TableCell>
-
-                  <TableCell>
-                    {r.approvedAt
-                      ? new Date(r.approvedAt).toLocaleDateString()
-                      : "-"}
-                  </TableCell>
-
-                  <TableCell align="right">
-                    {r.approve === "PENDING" && (
-                      <>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          sx={{ mr: 1 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApprove(r.reimburse_id);
-                          }}
-                        >
-                          Approve
-                        </Button>
-
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReject(r.reimburse_id);
-                          }}
-                        >
-                          Reject
-                        </Button>
-                      </>
-                    )}
-
-                    <Button
-                      size="small"
-                      sx={{ ml: 1 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelected(r);
-                      }}
-                    >
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
-
-        {/* DRAWER */}
-        <Drawer
-          anchor="right"
-          open={!!selected}
-          onClose={() => setSelected(null)}
-        >
-          <Box sx={{ width: 400, p: 3 }}>
-            {selected && (
-              <>
-                <Typography variant="h6" mb={2}>
-                  Reimburse Detail
-                </Typography>
-
-                <Chip
-                  label={selected.approve}
-                  color={
-                    selected.approve === "APPROVED"
-                      ? "success"
-                      : selected.approve === "REJECTED"
-                      ? "error"
-                      : "warning"
-                  }
-                  sx={{ mb: 2 }}
-                />
-
-                <Typography variant="body2" mb={1}>
-                  Staff: {selected.user_id}
-                </Typography>
-
-                <Typography variant="body2" mb={1}>
-                  Amount: ${selected.amount.toFixed(2)}
-                </Typography>
-
-                <Typography variant="body2" mb={1}>
-                  Created:{" "}
-                  {new Date(selected.createdAt).toLocaleString()}
-                </Typography>
-
-                {selected.evidence && (
-                  <img
-                    src={selected.evidence}
-                    alt="evidence"
-                    style={{
-                      width: "100%",
-                      borderRadius: 8,
-                      marginTop: 10,
-                    }}
-                  />
-                )}
-
-                {selected.approve === "PENDING" && (
-                  <Box mt={3} display="flex" gap={1}>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      onClick={() =>
-                        handleApprove(selected.reimburse_id)
-                      }
-                    >
-                      Approve
-                    </Button>
-
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      fullWidth
-                      onClick={() =>
-                        handleReject(selected.reimburse_id)
-                      }
-                    >
-                      Reject
-                    </Button>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Evidence
+                      </Typography>
+                      {selected.evidence && (
+                        <img
+                          src={selected.evidence}
+                          alt="evidence"
+                          style={{ width: "100%", marginTop: 8, borderRadius: 8 }}
+                        />
+                      )}
+                    </Box>
                   </Box>
                 )}
-              </>
-            )}
-          </Box>
-        </Drawer>
+              </Box>
+            </Drawer>
+          </>
+        )}
       </Box>
     </Box>
   );
