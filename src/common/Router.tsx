@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import ProfileManagement from "../pages/profile/ProfileManagement";
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
@@ -11,32 +12,57 @@ import ViewAttendance from "../pages/attendance/AttendanceView";
 import ReimburseList from "../reimburse/ReimburseList";
 import CreateReimburse from "../reimburse/CreateReimburse";
 import HomePage from "../pages/HomePage";
-import LeaveManagement from "../pages/LeaveManagement";
-
-const dummyUser: User = {
-  user_id: "u001",
-  name: "John Doe",
-  email: "john.doe@example.com",
-  password: "secret",
-  alamat: "123 Main St",
-  nomor_telepon: "123-456-7890",
-  foto: null,
-  salary: 5000,
-  type: "Admin",
-};
+import LeaveManagement from "../pages/leave/LeaveManagement";
 
 export function Router() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+        Loading...
+      </div>
+    );
+  }
+
+  const displayUser: User = user || {
+    user_id: "default",
+    name: "User",
+    email: "user@company.local",
+    password: "",
+    alamat: "",
+    nomor_telepon: "",
+    foto: null,
+    salary: 0,
+    type: "Staff",
+  };
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomePage user={dummyUser}/>} />
-        <Route
-          path="/profile"
-          element={<ProfileManagement userData={dummyUser} />}
-        />
+        {/* Public Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* Protected Routes */}
+        {isAuthenticated ? (
+          <>
+            <Route path="/" element={<HomePage user={displayUser} />} />
+            <Route path="/profile" element={<ProfileManagement userData={displayUser} />} />
+            <Route path="/reimburse-list" element={<ReimburseList />} />
+            <Route path="/reimburse" element={<CreateReimburse />} />
+            <Route path="/create-account" element={<CreateUser />} />
+            <Route path="/leave-request" element={<LeaveRequest />} />
+            <Route path="/attendance-view" element={<ViewAttendance />} />
+            <Route path="/leave-management-list" element={<LeaveManagement />} />
+            <Route path="/dashboard" element={<HomePage user={displayUser} />} />
+          </>
+        ) : (
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        )}
+
+        {/* 404 Page */}
         <Route
           path="*"
           element={
@@ -46,12 +72,6 @@ export function Router() {
             </div>
           }
         />
-        <Route path="/reimburse-list" element={<ReimburseList />} />
-        <Route path="/reimburse" element={<CreateReimburse />} />
-        <Route path="/create-account" element={<CreateUser />} />
-        <Route path="/leave-request" element={<LeaveRequest />} />
-        <Route path="/attendance-view" element={<ViewAttendance />} />
-        <Route path="/leave-management-list" element={<LeaveManagement />} />
       </Routes>
     </BrowserRouter>
   );
