@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: 2fpc-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm run backend:start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: CORS_ORIGIN
+        sync: false
