@@ -9,10 +9,14 @@ import type { User } from "../types/user";
 import CreateUser from "../pages/profile/CreateAccountAdmin";
 import LeaveRequest from "../pages/leave/LeaveManagementRequest";
 import ViewAttendance from "../pages/attendance/AttendanceView";
-import ReimburseList from "../reimburse/ReimburseList";
-import CreateReimburse from "../reimburse/CreateReimburse";
+import ReimburseList from "../pages/reimburse/ReimburseList";
+import CreateReimburse from "../pages/reimburse/CreateReimburse";
 import HomePage from "../pages/HomePage";
 import LeaveManagement from "../pages/leave/LeaveManagement";
+import Payroll from "../pages/payment/Payroll";
+import Penalty from "../pages/payment/Penalty";
+import ViewLeave from "../pages/leave/ViewLeave";
+import ManagementTree from "../pages/ManagementTree";
 
 export function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -44,6 +48,11 @@ export function Router() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/payroll" element={<Payroll />} />
+        <Route path="/penalty-requests" element={<Penalty />} />
+        <Route path="/view-leave" element={<ViewLeave />} />
+        <Route path="/management-tree" element={<ManagementTree />} />
+
 
         {/* Protected Routes */}
         {isAuthenticated ? (

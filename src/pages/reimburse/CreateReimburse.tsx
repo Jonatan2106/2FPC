@@ -7,8 +7,8 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { reimburseApi } from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import { reimburseApi } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 
 const CreateReimburse: React.FC = () => {
   const { user } = useAuth();

@@ -28,6 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 config/config.json
-config/config.json
 package-lock.json
 package.json
+pnpm-lock.yaml

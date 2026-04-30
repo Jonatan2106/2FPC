@@ -14,8 +14,8 @@ import {
   Alert,
 } from "@mui/material";
 
-import type { Reimburse } from "../types/reimburse";
-import { reimburseApi } from "../services/api";
+import type { Reimburse } from "../../types/reimburse";
+import { reimburseApi } from "../../services/api";
 
 const ReimburseList: React.FC = () => {
   const [data, setData] = React.useState<Reimburse[]>([]);

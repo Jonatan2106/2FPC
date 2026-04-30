@@ -184,3 +184,15 @@ export const reimburseApi = {
     return response.json();
   },
 };
+
+// Penalty APIs
+export const penaltyApi = {
+  createPenaltyRequest: async (amount: number, evidence: string) => {
+    const response = await fetch(`${API_BASE_URL}/penalty-requests`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ amount, evidence }),
+    });
+    return response.json();
+  },
+};
