@@ -48,11 +48,6 @@ export function Router() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/payroll" element={<Payroll />} />
-        <Route path="/penalty-requests" element={<Penalty />} />
-        <Route path="/view-leave" element={<ViewLeave />} />
-        <Route path="/management-tree" element={<ManagementTree />} />
-
 
         {/* Protected Routes */}
         {isAuthenticated ? (
@@ -66,6 +61,10 @@ export function Router() {
             <Route path="/attendance-view" element={<ViewAttendance />} />
             <Route path="/leave-management-list" element={<LeaveManagement />} />
             <Route path="/dashboard" element={<HomePage user={displayUser} />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/penalty-requests" element={<Penalty />} />
+            <Route path="/view-leave" element={<ViewLeave />} />
+            <Route path="/management-tree" element={<ManagementTree />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
