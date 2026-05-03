@@ -14,7 +14,6 @@ import {
   Alert,
   Button,
 } from "@mui/material";
-import { attendanceApi } from "../../services/api";
 
 interface AttendanceRecord {
   id: number;
@@ -28,13 +27,24 @@ const ViewAttendance: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
+
   React.useEffect(() => {
     const fetchAttendance = async () => {
       try {
-        const response = await attendanceApi.getAttendanceData();
+        const response = await fetch(`${API_BASE_URL}/attendance`, {
+          headers: getHeaders(),
+        });
 
-        if (response.data && Array.isArray(response.data)) {
-          setData(response.data);
+        const responseData = await response.json();
+
+        if (response.ok && responseData.data && Array.isArray(responseData.data)) {
+          setData(responseData.data);
         } else {
           // Fallback to mock data if no data returned
           setData([
@@ -59,10 +69,16 @@ const ViewAttendance: React.FC = () => {
 
   const handleGenerateQr = async () => {
     try {
-      const response = await attendanceApi.generateQr();
+      const response = await fetch(`${API_BASE_URL}/attendance/qr`, {
+        method: "GET",
+        headers: getHeaders(),
+      });
+
+      const data = await response.json();
+
       // Open QR code in new window or display modal
-      if (response.data) {
-        window.open(response.data.qrCode, "_blank");
+      if (response.ok && data.data) {
+        window.open(data.data.qrCode, "_blank");
       }
     } catch (err) {
       setError("An error occurred while generating QR code");

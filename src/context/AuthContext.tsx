@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import type { User } from "../types/user";
-import { getToken, removeToken } from "../services/api";
+
+// Helper functions for token management
+const getToken = () => localStorage.getItem("authToken");
+const removeToken = () => localStorage.removeItem("authToken");
 
 interface AuthContextType {
   user: User | null;
