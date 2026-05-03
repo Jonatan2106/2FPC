@@ -31,3 +31,4 @@ config/config.json
 package-lock.json
 package.json
 pnpm-lock.yaml
+.env
