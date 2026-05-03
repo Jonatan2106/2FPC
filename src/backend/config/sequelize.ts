@@ -17,7 +17,7 @@ export const sequelize = databaseUrl
       logging: false,
       models: [attendance, departement, leave_management, payroll, penalty, reimburse, staff_detail, user],
       dialectOptions:
-        process.env.DB_SSL === "true"
+        process.env.DATABASE_SSL === "true"
           ? {
               ssl: {
                 require: true,
@@ -27,11 +27,11 @@ export const sequelize = databaseUrl
           : undefined,
     })
   : new Sequelize({
-      database: process.env.DB_NAME || "postgres",
-      username: process.env.DB_USER || "postgres",
-      password: process.env.DB_PASS || "postgres",
-      host: process.env.DB_HOST || "localhost",
-      port: Number(process.env.DB_PORT || 5432),
+      database: process.env.DATABASE_NAME || "postgres",
+      username: process.env.DATABASE_USER || "postgres",
+      password: process.env.DATABASE_PASSWORD || "postgres",
+      host: process.env.DATABASE_HOST || "localhost",
+      port: Number(process.env.DATABASE_PORT || 5432),
       dialect: "postgres",
       logging: false,
       models: [attendance, departement, leave_management, payroll, penalty, reimburse, staff_detail, user],

@@ -14,7 +14,6 @@ import {
 } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { Dayjs } from "dayjs";
-import { leaveApi } from "../../services/api";
 
 const LeaveRequest: React.FC = () => {
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
@@ -23,6 +22,13 @@ const LeaveRequest: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
 
   const handleSubmit = async () => {
     if (!startDate || !endDate) {
@@ -39,13 +45,19 @@ const LeaveRequest: React.FC = () => {
     setError("");
 
     try {
-      const response = await leaveApi.createLeaveRequest(
-        startDate.format("YYYY-MM-DD"),
-        endDate.format("YYYY-MM-DD"),
-        reason
-      );
+      const response = await fetch(`${API_BASE_URL}/leave-requests`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          start_date: startDate.format("YYYY-MM-DD"),
+          end_date: endDate.format("YYYY-MM-DD"),
+          reason: reason,
+        }),
+      });
 
-      if (response.message && response.message.includes("success")) {
+      const data = await response.json();
+
+      if (response.ok && data.message && data.message.includes("success")) {
         setSuccess(true);
         setStartDate(null);
         setEndDate(null);

@@ -15,7 +15,6 @@ import {
 } from "@mui/material";
 
 import type { Reimburse } from "../../types/reimburse";
-import { reimburseApi } from "../../services/api";
 
 const ReimburseList: React.FC = () => {
   const [data, setData] = React.useState<Reimburse[]>([]);
@@ -23,6 +22,13 @@ const ReimburseList: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [actionLoading, setActionLoading] = React.useState(false);
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
 
   React.useEffect(() => {
     // Load reimburse data - using mockData for now as backend doesn't have GET endpoint
@@ -46,7 +52,13 @@ const ReimburseList: React.FC = () => {
 
     setActionLoading(true);
     try {
-      const response = await reimburseApi.approveOrDeclineReimburse(id, "approved");
+      const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ decision: "approved" }),
+      });
+
+      const data = await response.json();
 
       if (response.message && response.message.includes("success")) {
         setData((prev) =>
@@ -73,9 +85,15 @@ const ReimburseList: React.FC = () => {
 
     setActionLoading(true);
     try {
-      const response = await reimburseApi.approveOrDeclineReimburse(id, "declined");
+      const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ decision: "declined" }),
+      });
 
-      if (response.message && response.message.includes("success")) {
+      const data = await response.json();
+
+      if (response.ok && data.message && data.message.includes("success")) {
         setData((prev) =>
           prev.map((item) =>
             item.reimburse_id === id
@@ -85,7 +103,7 @@ const ReimburseList: React.FC = () => {
         );
         setSelected(null);
       } else {
-        setError(response.message || "Failed to reject reimburse request");
+        setError(data.message || "Failed to reject reimburse request");
       }
     } catch (err) {
       setError("An error occurred while rejecting reimburse request");

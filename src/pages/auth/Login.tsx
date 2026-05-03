@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Typography, TextField, Button, Link, CircularProgress, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { authApi } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 const Login: React.FC = () => {
@@ -11,6 +10,8 @@ const Login: React.FC = () => {
   const [error, setError] = React.useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -22,25 +23,34 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const response = await authApi.login(username, password);
+      const response = await fetch(`${API_BASE_URL}/auth/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-      if (response.message === "Login success") {
+      const data = await response.json();
+
+      if (response.ok && data.message === "Login success") {
         const userData = {
-          user_id: response.data.user_id,
-          name: response.data.username,
-          email: `${response.data.username}@company.local`,
+          user_id: data.data.user_id,
+          name: data.data.username,
+          email: `${data.data.username}@company.local`,
           password: "", // Don't store password
           alamat: "",
           nomor_telepon: "",
           foto: null,
           salary: 0,
-          type: response.data.type,
+          type: data.data.type,
         };
 
-        login(userData, response.data.token);
+        localStorage.setItem("authToken", data.data.token);
+
+        login(userData, data.data.token);
         navigate("/");
       } else {
-        setError(response.message || "Login failed");
+        setError(data.message || "Login failed");
       }
     } catch (err) {
       setError("An error occurred during login");

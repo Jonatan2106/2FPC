@@ -7,7 +7,6 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { penaltyApi } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 const Penalty: React.FC = () => {
@@ -18,6 +17,13 @@ const Penalty: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -53,19 +59,25 @@ const Penalty: React.FC = () => {
         const base64 = reader.result as string;
 
         try {
-          const response = await penaltyApi.createPenaltyRequest(
-            Number(amount),
-            base64
-          );
+          const response = await fetch(`${API_BASE_URL}/penalties`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              amount: Number(amount),
+              evidence: base64,
+            }),
+          });
 
-          if (response.message && response.message.includes("success")) {
+          const data = await response.json();
+
+          if (response.ok && data.message && data.message.includes("success")) {
             setSuccess(true);
             setFile(null);
             setPreview(null);
             setAmount("");
             setTimeout(() => setSuccess(false), 2000);
           } else {
-            setError(response.message || "Failed to submit penalty request");
+            setError(data.message || "Failed to submit penalty request");
           }
         } catch (err) {
           setError("An error occurred while submitting penalty request");

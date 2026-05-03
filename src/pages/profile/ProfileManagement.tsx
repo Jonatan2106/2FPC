@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import type { User } from "../../types/user";
 import type { Staff } from "../../types/staff";
-import { userApi } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 
 interface ProfilePageProps {
@@ -27,6 +26,13 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
 
   const handleChange = (field: keyof User, value: string) => {
     setUser({ ...user, [field]: value });
@@ -47,19 +53,24 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
     setError("");
 
     try {
-      const response = await userApi.updateOwnProfile(
-        authUser.user_id,
-        user.alamat,
-        user.nomor_telepon,
-        user.foto || undefined
-      );
+      const response = await fetch(`${API_BASE_URL}/staff/users/${authUser.user_id}/profile`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          alamat: user.alamat,
+          nomor_telepon: user.nomor_telepon,
+          foto: user.foto || undefined,
+        }),
+      });
 
-      if (response.message === "Profile updated") {
+      const data = await response.json();
+
+      if (response.ok && data.message === "Profile updated") {
         setSuccess(true);
         setEditing(false);
         setTimeout(() => setSuccess(false), 2000);
       } else {
-        setError(response.message || "Failed to update profile");
+        setError(data.message || "Failed to update profile");
       }
     } catch (err) {
       setError("An error occurred while updating profile");
