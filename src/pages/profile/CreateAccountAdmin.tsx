@@ -9,14 +9,36 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { userApi } from "../../services/api";
+import { userApi, departmentApi } from "../../services/api";
+import type { Department } from "../../types/department";
 
 const CreateUser: React.FC = () => {
   const [name, setName] = React.useState("");
   const [role, setRole] = React.useState<"Staff" | "Manager">("Staff");
+  const [selectedDepartment, setSelectedDepartment] = React.useState<string>("");
+  const [departments, setDepartments] = React.useState<Department[]>([]);
   const [loading, setLoading] = React.useState(false);
+  const [departmentsLoading, setDepartmentsLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
+
+  // Fetch departments on component mount
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await departmentApi.getAllDepartments();
+        if (response.message === "Departments fetched") {
+          setDepartments(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch departments:", err);
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   const handleCreateUser = async () => {
     if (!name) {
@@ -29,12 +51,13 @@ const CreateUser: React.FC = () => {
     setSuccess(false);
 
     try {
-      const response = await userApi.createStaffAccount(name, role);
+      const response = await userApi.createStaffAccount(name, role, selectedDepartment || undefined);
 
       if (response.message === "Staff account created") {
         setSuccess(true);
         setName("");
         setRole("Staff");
+        setSelectedDepartment("");
         // Reset success message after 2 seconds
         setTimeout(() => setSuccess(false), 2000);
       } else {
@@ -105,6 +128,24 @@ const CreateUser: React.FC = () => {
         >
           <MenuItem value="Staff">Staff</MenuItem>
           <MenuItem value="Manager">Manager</MenuItem>
+        </TextField>
+
+        <TextField
+          select
+          label="Department"
+          fullWidth
+          value={selectedDepartment}
+          onChange={(e) => setSelectedDepartment(e.target.value)}
+          disabled={loading || departmentsLoading}
+        >
+          <MenuItem value="">
+            <em>No Department</em>
+          </MenuItem>
+          {departments.map((dept) => (
+            <MenuItem key={dept.departement_id} value={dept.departement_id}>
+              {dept.company_name}
+            </MenuItem>
+          ))}
         </TextField>
 
         <Button
