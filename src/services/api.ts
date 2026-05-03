@@ -58,11 +58,11 @@ export const authApi = {
 
 // User APIs
 export const userApi = {
-  createStaffAccount: async (username: string, role: "Staff" | "Manager" = "Staff") => {
+  createStaffAccount: async (username: string, role: "Staff" | "Manager" = "Staff", departmentId?: string) => {
     const response = await fetch(`${API_BASE_URL}/admin/users/staff-account`, {
       method: "POST",
       headers: getHeaders(),
-      body: JSON.stringify({ username, role }),
+      body: JSON.stringify({ username, role, ...(departmentId && { department_id: departmentId }) }),
     });
     return response.json();
   },
@@ -85,6 +85,17 @@ export const userApi = {
         nomor_telepon,
         ...(foto && { foto }),
       }),
+    });
+    return response.json();
+  },
+};
+
+// Department APIs
+export const departmentApi = {
+  getAllDepartments: async () => {
+    const response = await fetch(`${API_BASE_URL}/departments`, {
+      method: "GET",
+      headers: getHeaders(),
     });
     return response.json();
   },
