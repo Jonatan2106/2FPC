@@ -49,7 +49,7 @@ const Login: React.FC = () => {
           type: data.data.type,
         };
 
-        localStorage.setItem("token", data.data.token);
+        localStorage.setItem("authToken", data.data.token);
 
         login(userData, data.data.token);
 
