@@ -5,7 +5,7 @@ import { controllerWrapper } from "../utils/controllerWrapper";
 
 const AuthRouter = express.Router();
 
-AuthRouter.get("/auth/login", controllerWrapper(loginStaffOrManager));
+AuthRouter.post("/auth/login", controllerWrapper(loginStaffOrManager));
 AuthRouter.post("/auth/logout", authenticateJWT, controllerWrapper(logoutWeb));
 AuthRouter.put("/auth/users/:id/reset-password", authenticateJWT, controllerWrapper(resetPasswordStaff));
 

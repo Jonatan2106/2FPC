@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { user as User } from "../../../models/user";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { generateToken } from "../utils/jwt_helper";
+import bcrypt from "bcrypt";
 
 type StaffRole = "Manager" | "Staff";
 
@@ -111,29 +112,42 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
   }
 };
 
+
 export const loginStaffOrManager = async (req: Request, res: Response) => {
   try {
+    const { username, password } = req.body;
 
-    const users = await User.findAll();
-    console.log("ALL USERS:", users.map(u => u.toJSON()));
-
-    const username = (req.query.username as string) || "";
-    const password = (req.query.password as string) || "";
-
+    // 1. Validate input
     if (!username || !password) {
-      return res.status(400).json({ message: "username and password are required" });
+      return res.status(400).json({
+        message: "username and password are required",
+      });
     }
 
-    const existingUser = await User.findOne({ where: { name: username } });
-    console.log("FOUND USER:", existingUser ? existingUser.toJSON() : null);
+    // 2. Find user
+    const existingUser = await User.findOne({
+      where: { name: username },
+    });
+
     if (!existingUser) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    if (existingUser.password !== password) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    // 3. Compare password (hashed)
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
     }
 
+    // 4. Generate token
     const token = generateToken({
       userId: existingUser.user_id,
       username: existingUser.name,
@@ -141,6 +155,7 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       purpose: "auth",
     });
 
+    // 5. Send response
     return res.status(200).json({
       message: "Login success",
       data: {
@@ -151,10 +166,12 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to login", error });
+    return res.status(500).json({
+      message: "Failed to login",
+      error,
+    });
   }
 };
-
 export const resetPasswordStaff = async (req: Request, res: Response) => {
   try {
     const userId = String(req.params.id);

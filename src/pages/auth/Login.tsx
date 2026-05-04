@@ -23,11 +23,15 @@ const Login: React.FC = () => {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
-        method: "GET",
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          username,
+          password,
+        }),
       });
 
       const data = await response.json();
@@ -37,7 +41,7 @@ const Login: React.FC = () => {
           user_id: data.data.user_id,
           name: data.data.username,
           email: `${data.data.username}@company.local`,
-          password: "", // Don't store password
+          password: "", // never store password
           alamat: "",
           nomor_telepon: "",
           foto: null,
@@ -45,16 +49,17 @@ const Login: React.FC = () => {
           type: data.data.type,
         };
 
-        localStorage.setItem("authToken", data.data.token);
+        localStorage.setItem("token", data.data.token);
 
         login(userData, data.data.token);
+
         navigate("/");
       } else {
         setError(data.message || "Login failed");
       }
     } catch (err) {
-      setError("An error occurred during login");
       console.error(err);
+      setError("An error occurred during login");
     } finally {
       setLoading(false);
     }

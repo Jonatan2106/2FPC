@@ -2,10 +2,12 @@ import React from "react";
 import { Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import type { User } from "../types/user";
+import { logoutWeb } from "../backend/utils/authLogout";
 
 interface NavbarProps {
   user: User;
 }
+
 
 const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
           { label: "Payroll", path: "/payroll" },
         ]
       : []),
+    { label: "Logout", action: "logout" },
   ];
 
   return (
@@ -54,15 +57,22 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
         sx={{
           display: "flex",
           gap: 2,
-          overflowX: "auto", // allow horizontal scroll
+          overflowX: "auto",
           whiteSpace: "nowrap",
-          "&::-webkit-scrollbar": { display: "none" }, // hide scrollbar
+          "&::-webkit-scrollbar": { display: "none" },
         }}
       >
         {navItems.map((item) => (
           <Button
             key={item.label}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              if ("action" in item && item.action === "logout") {
+                logoutWeb();
+                
+              } else {
+                navigate(item.path!);
+              }
+            }}
             sx={{
               color: "#000",
               backgroundColor: "transparent",
@@ -72,7 +82,7 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
               },
               textTransform: "none",
               fontWeight: 500,
-              flexShrink: 0, // prevent button from shrinking
+              flexShrink: 0,
             }}
           >
             {item.label}
