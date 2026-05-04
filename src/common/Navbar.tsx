@@ -1,16 +1,14 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import type { User } from "../types/user";
-import { logoutWeb } from "../backend/utils/authLogout";
+import { useAuth } from "../context/AuthContext";
 
-interface NavbarProps {
-  user: User;
-}
-
-
-const Navbar: React.FC<NavbarProps> = ({ user }) => {
+const Navbar: React.FC = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  if (!user) return null;
+
   const isAdmin = user.type === "Admin";
 
   const navItems = [
@@ -24,7 +22,7 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
           { label: "Payroll", path: "/payroll" },
         ]
       : []),
-    { label: "Logout", action: "logout" },
+    { label: "Logout", action: "logout" as const },
   ];
 
   return (
@@ -67,8 +65,7 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
             key={item.label}
             onClick={() => {
               if ("action" in item && item.action === "logout") {
-                logoutWeb();
-                
+                logout();
               } else {
                 navigate(item.path!);
               }

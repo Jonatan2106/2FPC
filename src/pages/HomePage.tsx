@@ -26,7 +26,7 @@ interface HomePageProps { user: User }
 const HomePage: React.FC<HomePageProps> = ({ user }) => {
   return (
     <Box>
-      <Navbar user={user} />
+      <Navbar/>
 
       <Box sx={{ p: 4 }}>
         <Typography variant="h4" fontWeight={600} mb={4}>

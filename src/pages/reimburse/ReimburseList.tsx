@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 
 import type { Reimburse } from "../../types/reimburse";
+import Navbar from "../../common/Navbar";
 
 const ReimburseList: React.FC = () => {
   const [data, setData] = React.useState<Reimburse[]>([]);
@@ -138,6 +139,7 @@ const ReimburseList: React.FC = () => {
         py: 4,
       }}
     >
+      <Navbar/>
       <Box sx={{ width: "100%", maxWidth: 1000 }}>
         {/* Title */}
         <Typography variant="h5" fontWeight={600} mb={3}>
@@ -321,10 +323,6 @@ const ReimburseList: React.FC = () => {
           </>
         )}
 
-        {/* Back to Dashboard */}
-        <Box mt={3}>
-          <Link href="/dashboard">Back to Dashboard</Link>
-        </Box>
       </Box>
     </Box>
   );

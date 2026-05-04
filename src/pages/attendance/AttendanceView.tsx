@@ -14,6 +14,7 @@ import {
   Alert,
   Button,
 } from "@mui/material";
+import Navbar from "../../common/Navbar";
 
 interface AttendanceRecord {
   id: number;
@@ -107,6 +108,8 @@ const ViewAttendance: React.FC = () => {
         </Typography>
       </Box>
 
+      <Navbar/>
+
       {/* Title */}
       <Typography variant="h6" mb={2}>
         My Attendance
@@ -163,10 +166,6 @@ const ViewAttendance: React.FC = () => {
         </>
       )}
 
-      {/* Back */}
-      <Box mt={3}>
-        <Link href="/dashboard">Back to Dashboard</Link>
-      </Box>
     </Box>
   );
 };

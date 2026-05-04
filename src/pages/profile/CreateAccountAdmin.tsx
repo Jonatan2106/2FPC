@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
+import Navbar from "../../common/Navbar";
 
 interface Department {
   departement_id: string;
@@ -118,6 +119,7 @@ const CreateUser: React.FC = () => {
           2FPC
         </Typography>
       </Box>
+      <Navbar/>
 
       {/* Form */}
       <Box
@@ -184,9 +186,6 @@ const CreateUser: React.FC = () => {
           {loading ? <CircularProgress size={24} /> : "Create User"}
         </Button>
 
-        <Link href="/dashboard" textAlign="center">
-          Back to Dashboard
-        </Link>
       </Box>
     </Box>
   );

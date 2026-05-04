@@ -12,6 +12,7 @@ import {
 import type { User } from "../../types/user";
 import type { Staff } from "../../types/staff";
 import { useAuth } from "../../context/AuthContext";
+import Navbar from "../../common/Navbar";
 
 interface ProfilePageProps {
   userData: User | Staff;
@@ -91,6 +92,7 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
 
   return (
     <Container maxWidth="sm">
+      <Navbar/>
       <Paper elevation={3} sx={{ padding: 4, mt: 5 }}>
         {/* Avatar */}
         <Box display="flex" flexDirection="column" alignItems="center" mb={3}>

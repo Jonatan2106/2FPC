@@ -8,6 +8,7 @@ import {
   Alert,
 } from "@mui/material";
 import { useAuth } from "../../context/AuthContext";
+import Navbar from "../../common/Navbar";
 
 const Penalty: React.FC = () => {
   const { user } = useAuth();
@@ -106,6 +107,7 @@ const Penalty: React.FC = () => {
         py: 6,
       }}
     >
+      <Navbar/>
       <Box
         sx={{
           width: "100%",

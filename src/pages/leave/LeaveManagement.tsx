@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 
 import type { LeaveManagements } from "../../types/leave_management";
+import Navbar from "../../common/Navbar";
 
 const LeaveManagement: React.FC = () => {
   const [data, setData] = React.useState<LeaveManagements[]>([]);
@@ -138,6 +139,7 @@ const LeaveManagement: React.FC = () => {
         py: 4,
       }}
     >
+      <Navbar/>
       <Box sx={{ width: "100%", maxWidth: 1000 }}>
         <Typography variant="h5" fontWeight={600} mb={3}>
           Leave Requests
@@ -349,10 +351,6 @@ const LeaveManagement: React.FC = () => {
           </>
         )}
 
-        {/* Back to Dashboard */}
-        <Box mt={3}>
-          <Link href="/dashboard">Back to Dashboard</Link>
-        </Box>
       </Box>
     </Box>
   );

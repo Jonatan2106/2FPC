@@ -1,4 +1,5 @@
 import React from 'react';
+import Navbar from '../../common/Navbar';
 
 const ViewLeave: React.FC = () => {
   const createdAt = 'March 5, 2026 09:14 AM';
@@ -14,6 +15,7 @@ const ViewLeave: React.FC = () => {
         color: '#111827',
       }}
     >
+      <Navbar/>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
         <div
           style={{

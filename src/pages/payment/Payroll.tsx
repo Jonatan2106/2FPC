@@ -8,6 +8,7 @@ import {
   Divider,
   InputAdornment,
 } from '@mui/material';
+import Navbar from '../../common/Navbar';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('id-ID', {
@@ -36,7 +37,8 @@ const Payroll: React.FC = () => {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f7f8fa', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff', p: { xs: 2, md: 4 } }}>
+      <Navbar />
       <Box sx={{ maxWidth: 1080, mx: 'auto' }}>
         <Stack spacing={2} mb={3}>
           <Typography variant="h4" fontWeight={700} color="text.primary">
