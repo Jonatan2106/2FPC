@@ -1,115 +1,156 @@
-import React from 'react';
-import Navbar from '../../common/Navbar';
+import React from "react";
+import {
+  Box,
+  Typography,
+  Chip,
+  Paper,
+  Stack,
+  CircularProgress,
+} from "@mui/material";
+import Navbar from "../../common/Navbar";
+import { useParams } from "react-router-dom";
+
+const API_BASE_URL = "http://localhost:8080/api/web";
 
 const ViewLeave: React.FC = () => {
-  const createdAt = 'March 5, 2026 09:14 AM';
-  const approvedAt = 'March 8, 2026 02:30 PM';
+  const { id: leaveId } = useParams();
+
+  const [data, setData] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    if (!leaveId) {
+      setError("Leave ID is missing");
+      return;
+    }
+
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      setError("You are not authenticated");
+      return;
+    }
+
+    const fetchLeave = async () => {
+      try {
+        setLoading(true);
+
+        const response = await fetch(
+          `${API_BASE_URL}/leave-requests/${leaveId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          setError(result.message || "Failed to fetch leave");
+          return;
+        }
+
+        // ❗ Guard 3: empty data
+        if (!result.data) {
+          setError("No leave data found");
+          return;
+        }
+
+        setData(result.data);
+      } catch (err) {
+        setError("Something went wrong");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeave();
+  }, [leaveId]);
+
+  const formatDate = (date?: string) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleString();
+  };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: '#f7f7f8',
-        padding: '32px',
-        fontFamily: 'Inter, system-ui, sans-serif',
-        color: '#111827',
-      }}
-    >
-      <Navbar/>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <div
-          style={{
-            marginBottom: 24,
-            padding: '28px 32px',
-            backgroundColor: '#ffffff',
-            borderRadius: 24,
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)',
-          }}
-        >
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.1 }}>
-              Leave Request Overview
-            </div>
-            <div style={{ marginTop: 8, color: '#6b7280', fontSize: 16 }}>
-              View when this leave request was created and when it was approved.
-            </div>
-          </div>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#ffffff", p: 4 }}>
+      <Navbar />
 
-          <div style={{ display: 'grid', gap: 18 }}>
-            <section
-              style={{
-                padding: 24,
-                borderRadius: 20,
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#475569', fontWeight: 700 }}>
-                    Request Created
-                  </div>
-                </div>
-                <div
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 999,
-                    backgroundColor: '#eff6ff',
-                    color: '#1d4ed8',
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                >
-                  Completed
-                </div>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>
-                {createdAt}
-              </div>
-              <div style={{ color: '#64748b', fontSize: 15 }}>
-                This is the date and time when the leave request was submitted.
-              </div>
-            </section>
+      <Box sx={{ maxWidth: 960, mx: "auto" }}>
+        <Paper sx={{ p: 4, border: "1px solid #e5e7eb" }} elevation={0}>
+          <Typography variant="h4" fontWeight={700}>
+            Leave Request Overview
+          </Typography>
 
-            <section
-              style={{
-                padding: 24,
-                borderRadius: 20,
-                backgroundColor: '#ffffff',
-                border: '1px solid #e5e7eb',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div>
-                  <div style={{ fontSize: 14, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#475569', fontWeight: 700 }}>
-                    Request Approved
-                  </div>
-                </div>
-                <div
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 999,
-                    backgroundColor: '#dcfce7',
-                    color: '#15803d',
-                    fontSize: 13,
-                    fontWeight: 600,
-                  }}
-                >
-                  Approved
-                </div>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>
-                {approvedAt}
-              </div>
-              <div style={{ color: '#64748b', fontSize: 15 }}>
-                This is the date and time when the leave request received final approval.
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
-    </div>
+          {/* ❗ ERROR STATE */}
+          {error && (
+            <Typography color="error" mt={2}>
+              {error}
+            </Typography>
+          )}
+
+          {/* ❗ LOADING */}
+          {loading && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+              <CircularProgress />
+            </Box>
+          )}
+
+          {/* ❗ NO DATA SAFE CHECK */}
+          {!loading && !error && !data && (
+            <Typography mt={2} color="text.secondary">
+              No leave request selected
+            </Typography>
+          )}
+
+          {/* DATA */}
+          {!loading && !error && data && (
+            <Stack spacing={2} mt={3}>
+              <Paper sx={{ p: 3, bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography fontWeight={700} color="#475569">
+                    REQUEST CREATED
+                  </Typography>
+
+                  <Chip label="Submitted" size="small" />
+                </Stack>
+
+                <Typography variant="h6" fontWeight={600} mt={2}>
+                  {formatDate(data.createdAt)}
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary">
+                  Reason: {data.reason || "-"}
+                </Typography>
+              </Paper>
+
+              <Paper sx={{ p: 3, border: "1px solid #e5e7eb" }}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography fontWeight={700} color="#475569">
+                    REQUEST STATUS
+                  </Typography>
+
+                  <Chip
+                    label={data.cuti ? "Approved" : "Pending"}
+                    size="small"
+                    color={data.cuti ? "success" : "warning"}
+                  />
+                </Stack>
+
+                <Typography variant="h6" fontWeight={600} mt={2}>
+                  {formatDate(data.approvedAt)}
+                </Typography>
+              </Paper>
+            </Stack>
+          )}
+        </Paper>
+      </Box>
+    </Box>
   );
 };
 
