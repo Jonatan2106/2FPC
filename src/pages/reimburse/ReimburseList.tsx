@@ -31,20 +31,32 @@ const ReimburseList: React.FC = () => {
   });
 
   React.useEffect(() => {
-    // Load reimburse data - using mockData for now as backend doesn't have GET endpoint
-    // In real scenario, you'd call an API endpoint
-    setData([
-      {
-        reimburse_id: "1",
-        amount: 120,
-        approve: "PENDING",
-        evidence: "https://via.placeholder.com/300",
-        user_id: "u1",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ]);
-    setLoading(false);
+    const fetchReimburseData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_BASE_URL}/reimburse-requests`, {
+          method: "GET",
+          headers: getHeaders(),
+        });
+
+        if (!response.ok) {
+          setError("Failed to fetch reimburse requests");
+          setLoading(false);
+          return;
+        }
+
+        const result = await response.json();
+        setData(result.data || []);
+        setError("");
+      } catch (err) {
+        setError("An error occurred while fetching reimburse requests");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReimburseData();
   }, []);
 
   const handleApprove = async (id: string) => {
@@ -60,17 +72,17 @@ const ReimburseList: React.FC = () => {
 
       const data = await response.json();
 
-      if (response.message && response.message.includes("success")) {
+      if (response.ok || data.message) {
         setData((prev) =>
           prev.map((item) =>
             item.reimburse_id === id
-              ? { ...item, approve: "APPROVED", updatedAt: new Date() }
+              ? { ...item, approve: true, updatedAt: new Date() }
               : item
           )
         );
         setSelected(null);
       } else {
-        setError(response.message || "Failed to approve reimburse request");
+        setError(data.message || "Failed to approve reimburse request");
       }
     } catch (err) {
       setError("An error occurred while approving reimburse request");
@@ -93,11 +105,11 @@ const ReimburseList: React.FC = () => {
 
       const data = await response.json();
 
-      if (response.ok && data.message && data.message.includes("success")) {
+      if (response.ok || data.message) {
         setData((prev) =>
           prev.map((item) =>
             item.reimburse_id === id
-              ? { ...item, approve: "REJECTED", updatedAt: new Date() }
+              ? { ...item, approve: false, updatedAt: new Date() }
               : item
           )
         );
@@ -171,41 +183,31 @@ const ReimburseList: React.FC = () => {
                     >
                       <TableCell>{r.user_id}</TableCell>
 
-                      <TableCell>${r.amount.toFixed(2)}</TableCell>
+                    <TableCell>-</TableCell>
 
-                      <TableCell>
-                        {r.evidence ? (
-                          <img
-                            src={r.evidence}
-                            alt="evidence"
-                            style={{
-                              width: 50,
-                              height: 50,
-                              objectFit: "cover",
-                              borderRadius: 6,
-                            }}
-                          />
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        <Chip
-                          label={r.approve}
-                          color={
-                            r.approve === "APPROVED"
-                              ? "success"
-                              : r.approve === "REJECTED"
-                              ? "error"
-                              : "warning"
-                          }
-                          size="small"
+                    <TableCell>
+                      {r.evidence ? (
+                        <img
+                          src={r.evidence}
+                          alt="evidence"
+                          style={{
+                            width: 50,
+                            height: 50,
+                            objectFit: "cover",
+                            borderRadius: 6,
+                          }}
                         />
-                      </TableCell>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
 
-                      <TableCell>
-                        {new Date(r.createdAt).toLocaleDateString()}
+                    <TableCell>
+                      <Chip
+                        label={r.approve ? "APPROVED" : "PENDING"}
+                        color={
+                          r.approve
+                            ? "success"
                       </TableCell>
 
                       <TableCell>
@@ -213,7 +215,7 @@ const ReimburseList: React.FC = () => {
                       </TableCell>
 
                       <TableCell align="right">
-                        {r.approve === "PENDING" && (
+                        {!r.approve && (
                           <>
                             <Button
                               size="small"
@@ -278,21 +280,19 @@ const ReimburseList: React.FC = () => {
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">
-                        Amount
+                        User ID
                       </Typography>
-                      <Typography>${selected.amount.toFixed(2)}</Typography>
+                      <Typography>{selected.user_id}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">
                         Status
                       </Typography>
                       <Chip
-                        label={selected.approve}
+                        label={selected.approve ? "APPROVED" : "PENDING"}
                         color={
-                          selected.approve === "APPROVED"
+                          selected.approve
                             ? "success"
-                            : selected.approve === "REJECTED"
-                            ? "error"
                             : "warning"
                         }
                         size="small"
