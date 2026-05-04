@@ -41,6 +41,20 @@ class LeaveEntry {
   final String type;
 }
 
+class AttendanceEntry {
+  AttendanceEntry({
+    required this.id,
+    required this.userId,
+    required this.clockIn,
+    required this.clockOut,
+  });
+
+  final String id;
+  final String userId;
+  final DateTime clockIn;
+  final DateTime? clockOut;
+}
+
 class RequestPayload {
   RequestPayload({
     required this.type,

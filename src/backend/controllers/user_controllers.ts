@@ -120,10 +120,11 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
 
 export const loginStaffOrManager = async (req: Request, res: Response) => {
   try {
-    const username = (req.query.username as string) || (req.body.username as string) || "";
-    const password = (req.query.password as string) || (req.body.password as string) || "";
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const username = (req.query.username as string) || (body.username as string) || "";
+    const password = (req.query.password as string) || (body.password as string) || "";
     const deviceId =
-      (req.query.device_id as string) || (req.body.device_id as string) || null; // Device identifier (IMEI, Android ID, or generated UUID)
+      (req.query.device_id as string) || (body.device_id as string) || null; // Device identifier (IMEI, Android ID, or generated UUID)
 
     if (!username || !password) {
       return res.status(400).json({ message: "username and password are required" });
@@ -154,7 +155,6 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       }
     }
 
-    // Generate QR code for today
     const qrData = await generateUserQrCode(existingUser.user_id);
     const qrImage = await generateQrImage(qrData);
 
@@ -177,9 +177,9 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
         type: existingUser.type,
         token,
         qr_code: qrData,
-        qr_image: qrImage, // DataURL for immediate display
+        qr_image: qrImage,
         device_id: deviceId || null,
-        qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000), // Tomorrow 00:00
+        qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
       },
     });
   } catch (error) {

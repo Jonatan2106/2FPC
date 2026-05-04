@@ -69,6 +69,33 @@ class BackendService {
     return token;
   }
 
+  Future<List<AttendanceEntry>> getAttendanceHistory(AppUser user) async {
+    final result = await _getJson(
+      path: '/mobile/attendance',
+      token: user.token,
+      query: {'user_id': user.id},
+    );
+
+    final rawList = result['data'];
+    if (rawList is! List) {
+      return const [];
+    }
+
+    return rawList
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (item) => AttendanceEntry(
+            id: (item['attendance_id'] ?? item['id'] ?? '').toString(),
+            userId: (item['user_id'] ?? user.id).toString(),
+            clockIn: DateTime.tryParse((item['clock_in'] ?? '').toString()) ??
+                DateTime.now(),
+            clockOut: DateTime.tryParse((item['clock_out'] ?? '').toString()),
+          ),
+        )
+        .where((item) => item.id.isNotEmpty)
+        .toList();
+  }
+
   Future<List<Department>> getDepartments(AppUser user) async {
     final result = await _getJson(path: '/web/departments', token: user.token);
     final rawList = result['data'];

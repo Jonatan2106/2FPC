@@ -18,7 +18,7 @@ export const generateToken = (
 };
 
 export const generateAttendanceQrToken = (userId: string): string => {
-  return generateToken({ userId, purpose: 'attendance_qr' }, '2m');
+  return generateToken({ userId, purpose: 'attendance_qr' }, '15m');
 };
 
 // Verify a JWT token

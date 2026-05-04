@@ -10,14 +10,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/main.dart';
 
 void main() {
-  testWidgets('2FPC launcher renders two apps', (WidgetTester tester) async {
+  testWidgets('launcher shows login screen', (WidgetTester tester) async {
     await tester.pumpWidget(const TwoFpcRootApp());
 
-    expect(find.text('Pilih Aplikasi 2FPC'), findsOneWidget);
-    expect(
-      find.textContaining('Aplikasi 1: Navigasi Perusahaan'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('Aplikasi 2: Placeholder'), findsOneWidget);
+    expect(find.text('Login Aplikasi Perusahaan'), findsOneWidget);
+    expect(find.text('Masuk ke Sistem'), findsOneWidget);
+    expect(find.text('Username'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
   });
 }
