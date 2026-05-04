@@ -125,6 +125,7 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
     }
 
     const existingUser = await User.findOne({ where: { name: username } });
+    console.log("FOUND USER:", existingUser ? existingUser.toJSON() : null);
     if (!existingUser) {
       return res.status(404).json({ message: "User not found" });
     }

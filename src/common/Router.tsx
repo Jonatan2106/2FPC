@@ -4,13 +4,10 @@ import ProfileManagement from "../pages/profile/ProfileManagement";
 import Login from "../pages/auth/Login";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import ResetPassword from "../pages/auth/ResetPassword";
-
 import type { User } from "../types/user";
 import CreateUser from "../pages/profile/CreateAccountAdmin";
-import LeaveRequest from "../pages/leave/LeaveManagementRequest";
 import ViewAttendance from "../pages/attendance/AttendanceView";
 import ReimburseList from "../pages/reimburse/ReimburseList";
-import CreateReimburse from "../pages/reimburse/CreateReimburse";
 import HomePage from "../pages/HomePage";
 import LeaveManagement from "../pages/leave/LeaveManagement";
 import Payroll from "../pages/payment/Payroll";
@@ -55,11 +52,10 @@ export function Router() {
             <Route path="/" element={<HomePage user={displayUser} />} />
             <Route path="/profile" element={<ProfileManagement userData={displayUser} />} />
             <Route path="/reimburse-list" element={<ReimburseList />} />
-            <Route path="/reimburse" element={<CreateReimburse />} />
             <Route path="/create-account" element={<CreateUser />} />
-            <Route path="/leave-request" element={<LeaveRequest />} />
             <Route path="/attendance-view" element={<ViewAttendance />} />
             <Route path="/leave-management-list" element={<LeaveManagement />} />
+            <Route path="/leave-view" element={<ViewLeave />} />
             <Route path="/dashboard" element={<HomePage user={displayUser} />} />
             <Route path="/payroll" element={<Payroll />} />
             <Route path="/penalty-requests" element={<Penalty />} />

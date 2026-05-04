@@ -1,7 +1,6 @@
 export type Reimburse = {
   reimburse_id: string;
-  amount: number;
-  approve: "APPROVED" | "REJECTED" | "PENDING";
+  approve: boolean;
   evidence?: string;
   approvedAt?: Date | null;
   user_id: string;

@@ -12,13 +12,13 @@ const Navbar: React.FC<NavbarProps> = ({ user }) => {
   const isAdmin = user.type === "Admin";
 
   const navItems = [
-    { label: "Reimburse", path: "/reimburse" },
-    { label: "Leave", path: "/leave-request" },
+    { label: "Reimburse", path: "/reimburse-list" },
+    { label: "Leave", path: "/leave-management-list" },
     { label: "Attendance", path: "/attendance-view" },
     { label: "Profile", path: "/profile" },
     ...(isAdmin
       ? [
-          { label: "Users", path: "/users" },
+          { label: "Users", path: "/create-account" },
           { label: "Payroll", path: "/payroll" },
         ]
       : []),

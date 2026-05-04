@@ -62,3 +62,49 @@ export const getLeaveTimelineAdmin = async (_req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to fetch leave timeline", error });
   }
 };
+
+export const getAllLeaveRequests = async (req: Request, res: Response) => {
+  try {
+    const { user_id, approved } = req.query;
+
+    const whereClause: Record<string, any> = {};
+
+    if (user_id) {
+      whereClause.user_id = String(user_id);
+    }
+
+    if (approved !== undefined) {
+      whereClause.cuti = approved === "true";
+    }
+
+    const leaveData = await LeaveManagement.findAll({
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      message: "Leave requests retrieved successfully",
+      data: leaveData,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to retrieve leave requests", error });
+  }
+};
+
+export const getLeaveRequestById = async (req: Request, res: Response) => {
+  try {
+    const leaveId = String(req.params.id);
+    const leaveRequest = await LeaveManagement.findByPk(leaveId);
+
+    if (!leaveRequest) {
+      return res.status(404).json({ message: "Leave request not found" });
+    }
+
+    return res.status(200).json({
+      message: "Leave request retrieved successfully",
+      data: leaveRequest,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to retrieve leave request", error });
+  }
+};
