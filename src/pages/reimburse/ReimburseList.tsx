@@ -12,6 +12,7 @@ import {
   Drawer,
   CircularProgress,
   Alert,
+  Link,
 } from "@mui/material";
 
 import type { Reimburse } from "../../types/reimburse";
@@ -34,7 +35,7 @@ const ReimburseList: React.FC = () => {
     const fetchReimburseData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/reimburse-requests`, {
+        const response = await fetch(`${API_BASE_URL}/all-reimburse-requests`, {
           method: "GET",
           headers: getHeaders(),
         });
@@ -208,7 +209,10 @@ const ReimburseList: React.FC = () => {
                         color={
                           r.approve
                             ? "success"
-                      </TableCell>
+                            : "warning"
+                        }
+                      />
+                    </TableCell>
 
                       <TableCell>
                         {new Date(r.updatedAt).toLocaleDateString()}
@@ -316,6 +320,11 @@ const ReimburseList: React.FC = () => {
             </Drawer>
           </>
         )}
+
+        {/* Back to Dashboard */}
+        <Box mt={3}>
+          <Link href="/dashboard">Back to Dashboard</Link>
+        </Box>
       </Box>
     </Box>
   );

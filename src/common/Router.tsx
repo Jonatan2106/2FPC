@@ -55,6 +55,7 @@ export function Router() {
             <Route path="/create-account" element={<CreateUser />} />
             <Route path="/attendance-view" element={<ViewAttendance />} />
             <Route path="/leave-management-list" element={<LeaveManagement />} />
+            <Route path="/leave-view" element={<ViewLeave />} />
             <Route path="/dashboard" element={<HomePage user={displayUser} />} />
             <Route path="/payroll" element={<Payroll />} />
             <Route path="/penalty-requests" element={<Penalty />} />

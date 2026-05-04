@@ -12,6 +12,7 @@ import {
   Drawer,
   CircularProgress,
   Alert,
+  Link,
 } from "@mui/material";
 
 import type { LeaveManagements } from "../../types/leave_management";
@@ -34,7 +35,7 @@ const LeaveManagement: React.FC = () => {
     const fetchLeaveData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/leave-requests`, {
+        const response = await fetch(`${API_BASE_URL}/all-leave-requests`, {
           method: "GET",
           headers: getHeaders(),
         });
@@ -141,6 +142,16 @@ const LeaveManagement: React.FC = () => {
         <Typography variant="h5" fontWeight={600} mb={3}>
           Leave Requests
         </Typography>
+
+        {/* View Leave Button */}
+        <Box sx={{ mb: 3 }}>
+          <Button
+            variant="contained"
+            onClick={() => window.location.href = "/leave-view"}
+          >
+            View List of Leave Management Approved
+          </Button>
+        </Box>
 
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
@@ -337,6 +348,11 @@ const LeaveManagement: React.FC = () => {
             </Drawer>
           </>
         )}
+
+        {/* Back to Dashboard */}
+        <Box mt={3}>
+          <Link href="/dashboard">Back to Dashboard</Link>
+        </Box>
       </Box>
     </Box>
   );
