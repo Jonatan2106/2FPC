@@ -7,9 +7,10 @@ type StaffRole = "Manager" | "Staff";
 
 export const createStaffAccountAdmin = async (req: Request, res: Response) => {
   try {
-    const { username, role = "Staff" } = req.body as {
+    const { username, role = "Staff", departement_id } = req.body as {
       username?: string;
       role?: StaffRole;
+      departement_id?: string;
     };
 
     if (!username) {
@@ -30,6 +31,7 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
     await StaffDetail.create({
       user_id: newUser.user_id,
       role: normalizedRole,
+      departement_id: departement_id || null,
     });
 
     return res.status(201).json({
@@ -38,6 +40,7 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
         user_id: newUser.user_id,
         username: newUser.name,
         role: normalizedRole,
+        departement_id: departement_id || null,
       },
     });
   } catch (error) {
@@ -110,6 +113,10 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
 
 export const loginStaffOrManager = async (req: Request, res: Response) => {
   try {
+
+    const users = await User.findAll();
+    console.log("ALL USERS:", users.map(u => u.toJSON()));
+
     const username = (req.query.username as string) || "";
     const password = (req.query.password as string) || "";
 

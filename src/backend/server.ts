@@ -1,5 +1,7 @@
 import app from "./app";
 import { sequelize } from "./config/sequelize";
+import path from "path";
+
 
 const port = Number(process.env.PORT || 8080);
 const host = process.env.HOST || "0.0.0.0";
@@ -8,6 +10,8 @@ const startServer = async () => {
   try {
     await sequelize.authenticate();
     console.log("Database connected");
+    console.log("DB NAME:", process.env.DATABASE_NAME);
+    console.log("DB HOST:", process.env.DATABASE_HOST);
 
     app.listen(port, host, () => {
       console.log(`Backend running on http://${host}:${port}`);

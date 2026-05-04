@@ -10,6 +10,9 @@ import {
   TableRow,
   Paper,
   Link,
+  CircularProgress,
+  Alert,
+  Button,
 } from "@mui/material";
 
 interface AttendanceRecord {
@@ -20,27 +23,68 @@ interface AttendanceRecord {
 }
 
 const ViewAttendance: React.FC = () => {
-  // Dummy data (nanti ganti dari API)
-  const [data] = React.useState<AttendanceRecord[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      checkIn: "2026-03-20 08:00",
-      checkOut: "2026-03-20 17:00",
-    },
-    {
-      id: 2,
-      name: "John Doe",
-      checkIn: "2026-03-21 08:15",
-      checkOut: "2026-03-21 17:05",
-    },
-    {
-      id: 3,
-      name: "John Doe",
-      checkIn: "2026-03-22 07:55",
-      checkOut: "2026-03-22 16:50",
-    },
-  ]);
+  const [data, setData] = React.useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState("");
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
+
+  React.useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/attendance`, {
+          headers: getHeaders(),
+        });
+
+        const responseData = await response.json();
+
+        if (response.ok && responseData.data && Array.isArray(responseData.data)) {
+          setData(responseData.data);
+        } else {
+          // Fallback to mock data if no data returned
+          setData([
+            {
+              id: 1,
+              name: "John Doe",
+              checkIn: "2026-03-20 08:00",
+              checkOut: "2026-03-20 17:00",
+            },
+          ]);
+        }
+      } catch (err) {
+        setError("An error occurred while fetching attendance data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchAttendance();
+  }, []);
+
+  const handleGenerateQr = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/qr`, {
+        method: "GET",
+        headers: getHeaders(),
+      });
+
+      const data = await response.json();
+
+      // Open QR code in new window or display modal
+      if (response.ok && data.data) {
+        window.open(data.data.qrCode, "_blank");
+      }
+    } catch (err) {
+      setError("An error occurred while generating QR code");
+      console.error(err);
+    }
+  };
 
   return (
     <Box
@@ -68,31 +112,56 @@ const ViewAttendance: React.FC = () => {
         My Attendance
       </Typography>
 
-      {/* Table */}
-      <TableContainer
-        component={Paper}
-        sx={{ width: "100%", maxWidth: 800 }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><b>Name</b></TableCell>
-              <TableCell><b>Check In</b></TableCell>
-              <TableCell><b>Check Out</b></TableCell>
-            </TableRow>
-          </TableHead>
+      {error && <Alert severity="error" sx={{ mb: 2, maxWidth: 800 }}>{error}</Alert>}
 
-          <TableBody>
-            {data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.name}</TableCell>
-                <TableCell>{row.checkIn}</TableCell>
-                <TableCell>{row.checkOut}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Generate QR Button */}
+      <Box sx={{ mb: 3 }}>
+        <Button variant="outlined" onClick={handleGenerateQr}>
+          Generate Check-in QR Code
+        </Button>
+      </Box>
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" py={4}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {/* Table */}
+          <TableContainer
+            component={Paper}
+            sx={{ width: "100%", maxWidth: 800 }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell><b>Name</b></TableCell>
+                  <TableCell><b>Check In</b></TableCell>
+                  <TableCell><b>Check Out</b></TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {data && data.length > 0 ? (
+                  data.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell>{row.checkIn}</TableCell>
+                      <TableCell>{row.checkOut}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      No attendance records found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
 
       {/* Back */}
       <Box mt={3}>

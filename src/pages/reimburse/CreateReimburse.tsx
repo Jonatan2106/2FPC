@@ -4,12 +4,26 @@ import {
   Typography,
   Button,
   TextField,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
+import { useAuth } from "../../context/AuthContext";
 
 const CreateReimburse: React.FC = () => {
+  const { user } = useAuth();
   const [file, setFile] = React.useState<File | null>(null);
   const [preview, setPreview] = React.useState<string | null>(null);
   const [amount, setAmount] = React.useState<number | "">("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [success, setSuccess] = React.useState(false);
+
+  const API_BASE_URL = "http://localhost:8080/api/web";
+
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -29,15 +43,55 @@ const CreateReimburse: React.FC = () => {
     setPreview(null);
   };
 
-  const handleSubmit = () => {
-    if (!file || !amount || amount <= 0) return;
+  const handleSubmit = async () => {
+    if (!file || !amount || Number(amount) <= 0) {
+      setError("Please select a file and enter a valid amount");
+      return;
+    }
 
-    console.log("Submit reimburse:", { file, amount });
+    setLoading(true);
+    setError("");
 
-    // TODO:
-    // 1. Upload file → get URL
-    // 2. POST to backend:
-    //    { evidence: file_url, amount, user_id: currentUserId }
+    try {
+      // Convert file to base64 for now (in production, use proper file upload)
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/reimburse-requests`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              amount: Number(amount),
+              evidence: base64,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.message && data.message.includes("success")) {
+            setSuccess(true);
+            setFile(null);
+            setPreview(null);
+            setAmount("");
+            setTimeout(() => setSuccess(false), 2000);
+          } else {
+            setError(data.message || "Failed to submit reimburse request");
+          }
+        } catch (err) {
+          setError("An error occurred while submitting reimburse request");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setError("An error occurred while processing file");
+      setLoading(false);
+      console.error(err);
+    }
   };
 
   return (
@@ -71,6 +125,9 @@ const CreateReimburse: React.FC = () => {
           </Typography>
         </Box>
 
+        {error && <Alert severity="error">{error}</Alert>}
+        {success && <Alert severity="success">Reimburse request submitted successfully!</Alert>}
+
         {/* Amount Input */}
         <TextField
           label="Amount"
@@ -80,6 +137,7 @@ const CreateReimburse: React.FC = () => {
           fullWidth
           variant="outlined"
           inputProps={{ min: 0 }}
+          disabled={loading}
         />
 
         {/* Upload Box */}
@@ -91,7 +149,7 @@ const CreateReimburse: React.FC = () => {
               p: 3,
               textAlign: "center",
               bgcolor: "#fff",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
             }}
           >
             <input
@@ -99,8 +157,9 @@ const CreateReimburse: React.FC = () => {
               hidden
               id="upload"
               onChange={handleFileChange}
+              disabled={loading}
             />
-            <label htmlFor="upload">
+            <label htmlFor="upload" style={{ cursor: loading ? "not-allowed" : "pointer" }}>
               <Typography variant="body1" color="textSecondary">
                 Click to upload evidence (image or PDF)
               </Typography>
@@ -135,7 +194,12 @@ const CreateReimburse: React.FC = () => {
               <Typography variant="caption" color="textSecondary">
                 {file.name}
               </Typography>
-              <Button size="small" color="error" onClick={handleRemoveFile}>
+              <Button
+                size="small"
+                color="error"
+                onClick={handleRemoveFile}
+                disabled={loading}
+              >
                 Remove
               </Button>
             </Box>
@@ -146,10 +210,10 @@ const CreateReimburse: React.FC = () => {
         <Button
           variant="contained"
           size="large"
-          disabled={!file || !amount || amount <= 0}
+          disabled={!file || !amount || Number(amount) <= 0 || loading}
           onClick={handleSubmit}
         >
-          Submit Reimbursement
+          {loading ? <CircularProgress size={24} /> : "Submit Reimbursement"}
         </Button>
       </Box>
     </Box>

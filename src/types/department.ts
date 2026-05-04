@@ -1,5 +1,13 @@
 export type Department = {
-  department_id: string;
-  name: string;
-  parent_id: string;
+  departement_id: string;
+  company_name: string;
+  company_email: string;
+  password: string;
+  address?: string;
+  website?: string;
+  logo_url?: string;
+  description?: string;
+  industry?: string;
+  created_at: string;
+  updated_at: string;
 };
