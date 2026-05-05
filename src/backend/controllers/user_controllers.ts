@@ -125,8 +125,6 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
 export const loginStaffOrManager = async (req: Request, res: Response) => {
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
-    const username = (req.query.username as string) || (body.username as string) || "";
-    const password = (req.query.password as string) || (body.password as string) || "";
     const deviceId =
       (req.query.device_id as string) || (body.device_id as string) || null; // Device identifier (IMEI, Android ID, or generated UUID)
     const { username, password } = req.body;
