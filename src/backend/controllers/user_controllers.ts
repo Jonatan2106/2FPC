@@ -20,12 +20,12 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
 
     const normalizedRole: StaffRole = role === "Manager" ? "Manager" : "Staff";
     const email = `${username.toLowerCase().replace(/\s+/g, ".")}@company.local`;
-    const defaultPassword = "changeme123";
-
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash("changeme123", saltRounds);
     const newUser = await User.create({
       name: username,
       email,
-      password: defaultPassword,
+      password: hashedPassword,
       type: "Staff",
     });
 
@@ -117,14 +117,12 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    // 1. Validate input
     if (!username || !password) {
       return res.status(400).json({
         message: "username and password are required",
       });
     }
 
-    // 2. Find user
     const existingUser = await User.findOne({
       where: { name: username },
     });
@@ -135,7 +133,6 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       });
     }
 
-    // 3. Compare password (hashed)
     const isPasswordValid = await bcrypt.compare(
       password,
       existingUser.password
