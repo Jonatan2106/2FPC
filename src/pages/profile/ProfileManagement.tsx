@@ -19,7 +19,7 @@ interface ProfilePageProps {
 }
 
 const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, login } = useAuth();
   const isStaff = "role" in userData;
   const initialUser: User = isStaff ? userData.user : userData;
   const [user, setUser] = useState<User>({ ...initialUser });
@@ -45,19 +45,22 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
       return;
     }
 
-    if (!authUser?.user_id) {
+    const userId = authUser?.user_id || user.user_id;
+    if (!userId) {
       setError("User ID not found");
       return;
     }
 
     setLoading(true);
     setError("");
+    setSuccess(false);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/staff/users/${authUser.user_id}/profile`, {
+      const response = await fetch(`${API_BASE_URL}/staff/users/${userId}/profile`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({
+          name: user.name,
           alamat: user.alamat,
           nomor_telepon: user.nomor_telepon,
           foto: user.foto || undefined,
@@ -66,9 +69,22 @@ const ProfileManagement: React.FC<ProfilePageProps> = ({ userData }) => {
 
       const data = await response.json();
 
-      if (response.ok && data.message === "Profile updated") {
+      if (response.ok) {
         setSuccess(true);
         setEditing(false);
+
+        const updatedUser = {
+          ...authUser,
+          ...user,
+          name: data.data?.name ?? user.name,
+          alamat: data.data?.alamat ?? user.alamat,
+          nomor_telepon: data.data?.nomor_telepon ?? user.nomor_telepon,
+          foto: data.data?.foto ?? user.foto,
+        } as User;
+
+        login(updatedUser, localStorage.getItem("authToken") || "");
+        setUser(updatedUser);
+
         setTimeout(() => setSuccess(false), 2000);
       } else {
         setError(data.message || "Failed to update profile");

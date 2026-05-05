@@ -71,6 +71,24 @@ export const getAllReimburseRequests = async (req: Request, res: Response) => {
   }
 };
 
+export const getPendingReimburseRequests = async (_req: Request, res: Response) => {
+  try {
+    const pendingCount = await Reimburse.count({
+      where: {
+        approve: false,
+        approvedAt: null,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Pending reimburse requests count fetched",
+      data: { pendingReimburseCount: pendingCount },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch pending reimburse requests", error });
+  }
+};
+
 export const getReimburseRequestById = async (req: Request, res: Response) => {
   try {
     const reimburseId = String(req.params.id);

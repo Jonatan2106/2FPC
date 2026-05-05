@@ -53,7 +53,7 @@ export class user extends Model {
     declare type: "Admin" | "Staff";
 
     @Column({
-        type: DataType.STRING,
+        type: DataType.TEXT,
         allowNull: true
     })
     declare foto: string;

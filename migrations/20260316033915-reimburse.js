@@ -13,8 +13,8 @@ export default {
         type: Sequelize.BOOLEAN, 
         defaultValue: false 
       },
-      evidence: { 
-        type: Sequelize.STRING 
+      amount: { 
+        type: Sequelize.DECIMAL(10, 2) 
       },
       approvedAt: { 
         type: Sequelize.DATE
