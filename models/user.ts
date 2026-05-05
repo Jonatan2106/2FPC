@@ -1,4 +1,6 @@
 import { Table, Column, Model, DataType } from "sequelize-typescript";
+import { HasOne } from "sequelize-typescript";
+import { staff_detail } from "./staff_details";
 
 @Table({
     tableName: "users",
@@ -63,4 +65,10 @@ export class user extends Model {
         allowNull: true
     })
     declare salary: number;
+
+    @HasOne(() => staff_detail, {
+        foreignKey: "user_id",
+        sourceKey: "user_id",
+    })
+    declare staff_detail: staff_detail;
 }

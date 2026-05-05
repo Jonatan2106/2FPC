@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { user as User } from "../../../models/user";
+import { departement as Departement } from "../../../models/departements";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { generateToken } from "../utils/jwt_helper";
 import bcrypt from "bcrypt";
@@ -144,7 +145,6 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       });
     }
 
-    // 4. Generate token
     const token = generateToken({
       userId: existingUser.user_id,
       username: existingUser.name,
@@ -196,7 +196,74 @@ export const resetPasswordStaff = async (req: Request, res: Response) => {
 };
 
 export const logoutWeb = async (_req: Request, res: Response) => {
-  // JWT is stateless; client should remove token from storage.
   return res.status(200).json({ message: "Logout success" });
 };
 
+export const getAllUsersAdmin = async (_req: Request, res: Response) => {
+  try {
+    const users = await User.findAll({
+      attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: StaffDetail,
+          attributes: ["role", "departement_id", "hire_date"],
+          include: [
+            {
+              model: Departement,
+              attributes: ["company_name"],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      message: "Users fetched",
+      data: users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to fetch users",
+      error,
+    });
+  }
+};
+
+export const getUserByIdAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ["password"] },
+      include: [
+        {
+          model: StaffDetail,
+          attributes: ["role", "departement_id", "hire_date"],
+          include: [
+            {
+              model: Departement,
+              attributes: ["company_name"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "User fetched",
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to fetch user",
+      error,
+    });
+  }
+};

@@ -14,6 +14,8 @@ import Payroll from "../pages/payment/Payroll";
 import Penalty from "../pages/payment/Penalty";
 import ViewLeave from "../pages/leave/ViewLeave";
 import ManagementTree from "../pages/ManagementTree";
+import ViewUsers from "../pages/profile/ViewUsers";
+import AdminEditUserPage from "../pages/profile/AdminEditUserPage";
 
 export function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -61,6 +63,8 @@ export function Router() {
             <Route path="/penalty-requests" element={<Penalty />} />
             <Route path="/view-leave" element={<ViewLeave />} />
             <Route path="/management-tree" element={<ManagementTree />} />
+            <Route path="/users" element={<ViewUsers />} />
+            <Route path="/users/:id" element={<AdminEditUserPage />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
