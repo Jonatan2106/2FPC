@@ -6,8 +6,6 @@ import {
 import {
   Box,
   Typography,
-  Checkbox,
-  FormControlLabel,
   Paper,
   ThemeProvider,
   createTheme,

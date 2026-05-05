@@ -152,7 +152,6 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       purpose: "auth",
     });
 
-    // 5. Send response
     return res.status(200).json({
       message: "Login success",
       data: {
