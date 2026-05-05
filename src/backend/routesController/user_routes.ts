@@ -5,6 +5,8 @@ import {
   updateUserProfileAdmin,
   getAllUsersAdmin,
   getUserByIdAdmin,
+  verifyQrCode,
+  getUserQrCode,
 } from "../controllers/user_controllers";
 import { authenticateJWT } from "../middleware/auth_middleware";
 import { controllerWrapper } from "../utils/controllerWrapper";
@@ -16,5 +18,9 @@ UserRouter.put("/admin/users/:id", authenticateJWT, controllerWrapper(updateUser
 UserRouter.get("/admin/users", authenticateJWT, controllerWrapper(getAllUsersAdmin));
 UserRouter.get("/admin/users/:id", authenticateJWT, controllerWrapper(getUserByIdAdmin));
 UserRouter.put("/staff/users/:id/profile", authenticateJWT, controllerWrapper(updateOwnProfileStaff));
+
+// QR Code endpoints
+UserRouter.post("/qr/verify", controllerWrapper(verifyQrCode));
+UserRouter.get("/qr/:id", controllerWrapper(getUserQrCode));
 
 export default UserRouter;

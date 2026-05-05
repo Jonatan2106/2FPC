@@ -6,7 +6,7 @@ import {
     ForeignKey,
     BelongsTo,
 } from "sequelize-typescript";
-import { staff_detail } from "./staff_details";
+import { user } from "./user";
 
 @Table({
     tableName: "attendance",
@@ -35,15 +35,15 @@ export class attendance extends Model {
     })
     declare clock_out: Date;
 
-    @ForeignKey(() => staff_detail)
+    @ForeignKey(() => user)
     @Column({
         type: DataType.UUID,
         allowNull: false
     })
     declare user_id: string;
 
-    @BelongsTo(() => staff_detail, {
+    @BelongsTo(() => user, {
         foreignKey: "user_id", targetKey: "user_id"
     })
-    declare staff_data: staff_detail;
+    declare user_data: user;
 }
