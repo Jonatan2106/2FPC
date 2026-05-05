@@ -25,8 +25,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   List<AttendanceEntry> _attendanceHistory = [];
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
-  DateTime _attendanceFocusedDay = DateTime.now();
-  DateTime _attendanceSelectedDay = DateTime.now();
   String? _selectedDepartmentId;
   // Mode for department calendar date taps
   DeptCalendarMode _deptMode = DeptCalendarMode.requestLeave;
@@ -200,17 +198,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
       );
       return isSameDay(normalized, clockInDay);
     }).toList();
-  }
-
-  String _deptModeLabel() {
-    switch (_deptMode) {
-      case DeptCalendarMode.viewAttendance:
-        return 'Lihat Kehadiran';
-      case DeptCalendarMode.requestLeave:
-        return 'Ajukan Cuti';
-      case DeptCalendarMode.requestReimburse:
-        return 'Ajukan Reimburse';
-    }
   }
 
   Future<void> _openAttendancePopup(DateTime date) async {
