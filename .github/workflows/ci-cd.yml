@@ -1,0 +1,114 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  backend-ci:
+    name: Backend CI
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: Pole2108
+          POSTGRES_DB: 2FPC
+        ports:
+          - 5433:5433
+        options: >-
+          --health-cmd="pg_isready -U postgres -d 2FPC"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 5433
+      DATABASE_NAME: 2FPC
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: Pole2108
+      DATABASE_DIALECT: postgres
+      JWT_SECRET: ci-secret
+      CORS_ORIGIN: http://localhost:5173,http://localhost:3000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run migrations
+        run: npm run migrate-up
+
+      - name: Run backend unit tests
+        run: npm run test:unit
+
+      - name: Run linter
+        run: npm run lint
+
+  flutter-ci:
+    name: Flutter CI (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - mobile
+          - scanner_app
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Fetch Flutter dependencies
+        run: flutter pub get
+
+      - name: Analyze Flutter code
+        run: flutter analyze
+
+      - name: Run Flutter tests
+        run: flutter test
+
+  deploy-backend:
+    name: Deploy Backend to Render
+    runs-on: ubuntu-latest
+    needs:
+      - backend-ci
+      - flutter-ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL is not set. Skipping deploy."
+            exit 0
+          fi
+
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK_URL"
