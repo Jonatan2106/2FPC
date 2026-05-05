@@ -116,7 +116,7 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
             variant="contained"
             size="large"
             sx={{ minWidth: 200, flex: "1 1 250px" }}
-            onClick={() => { window.location.href = "/edit-profile"; }}
+            onClick={() => { window.location.href = "/users"; }}
           >
             Edit Profile
           </Button>
@@ -132,7 +132,7 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
             variant="contained"
             size="large"
             sx={{ minWidth: 200, flex: "1 1 250px" }}
-            onClick={() => { window.location.href = "/penalty"; }}
+            onClick={() => { window.location.href = "/penalty-requests"; }}
           >
             Penalty
           </Button>
