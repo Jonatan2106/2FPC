@@ -18,7 +18,7 @@ const Navbar: React.FC = () => {
     { label: "Profile", path: "/profile" },
     ...(isAdmin
       ? [
-          { label: "Users", path: "/create-account" },
+          { label: "Create Users", path: "/create-account" },
           { label: "Payroll", path: "/payroll" },
         ]
       : []),

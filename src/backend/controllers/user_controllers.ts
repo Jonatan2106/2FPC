@@ -169,24 +169,26 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const resetPasswordStaff = async (req: Request, res: Response) => {
   try {
-    const userId = String(req.params.id);
-    const existingUser = await User.findByPk(userId);
-    if (!existingUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    // Ambil email dari URL params (karena di route pakai :email)
+    const { email } = req.params; 
+    const { newPassword } = req.body;
 
-    const { oldPassword, newPassword } = req.body;
     if (!newPassword) {
       return res.status(400).json({ message: "newPassword is required" });
     }
 
-    if (oldPassword && existingUser.password !== oldPassword) {
-      return res.status(400).json({ message: "Old password is incorrect" });
+    const existingUser = await User.findOne({ where: { email: email } });
+    
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
     }
 
+    // Update password tanpa mengecek oldPassword (sesuai alur Forgot Password)
     await existingUser.update({ password: newPassword });
+
     return res.status(200).json({ message: "Password reset success" });
   } catch (error) {
     return res.status(500).json({ message: "Failed to reset password", error });

@@ -1,156 +1,200 @@
-import React from "react";
-import {
-  Box,
-  Typography,
-  Chip,
-  Paper,
-  Stack,
-  CircularProgress,
-} from "@mui/material";
-import Navbar from "../../common/Navbar";
-import { useParams } from "react-router-dom";
-
-const API_BASE_URL = "http://localhost:8080/api/web";
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { CircularProgress, Alert, Box, Button } from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import type { LeaveManagements } from '../../types/leave_management';
 
 const ViewLeave: React.FC = () => {
-  const { id: leaveId } = useParams();
+  const { id } = useParams<{ id: string }>(); // Mengambil ID dari URL aplikasi (React Router)
+  const navigate = useNavigate();
+  
+  const [leave, setLeave] = useState<LeaveManagements | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const [data, setData] = React.useState<any>(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
+  const API_BASE_URL = "http://localhost:8080/api/web";
 
-  React.useEffect(() => {
-    if (!leaveId) {
-      setError("Leave ID is missing");
-      return;
-    }
-
-    const token = localStorage.getItem("authToken");
-
-    if (!token) {
-      setError("You are not authenticated");
-      return;
-    }
-
-    const fetchLeave = async () => {
+  useEffect(() => {
+    const fetchLeaveTimeline = async () => {
       try {
         setLoading(true);
-
-        const response = await fetch(
-          `${API_BASE_URL}/leave-requests/${leaveId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const result = await response.json();
+        // Menggunakan URL yang benar sesuai permintaan Anda
+        // Kita kirimkan ID melalui Query Parameter agar backend tahu data mana yang diambil
+        const response = await fetch(`${API_BASE_URL}/admin/leave-requests/timeline`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
 
         if (!response.ok) {
-          setError(result.message || "Failed to fetch leave");
-          return;
+          throw new Error("Failed to fetch leave timeline");
         }
 
-        // ❗ Guard 3: empty data
-        if (!result.data) {
-          setError("No leave data found");
-          return;
-        }
-
-        setData(result.data);
-      } catch (err) {
-        setError("Something went wrong");
-        console.error(err);
+        const result = await response.json();
+        // Menyesuaikan dengan struktur data yang biasanya dikirim controller (result.data atau result)
+        setLeave(result.data || result); 
+      } catch (err: any) {
+        setError(err.message || "An error occurred");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchLeave();
-  }, [leaveId]);
+    if (id) {
+      fetchLeaveTimeline();
+    } else {
+      setError("No Leave ID provided");
+      setLoading(false);
+    }
+  }, [id]);
 
-  const formatDate = (date?: string) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleString();
+  const formatDateTime = (date: Date | string | undefined) => {
+    if (!date) return "N/A";
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).format(new Date(date));
   };
 
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#ffffff", p: 4 }}>
-      <Navbar />
-
-      <Box sx={{ maxWidth: 960, mx: "auto" }}>
-        <Paper sx={{ p: 4, border: "1px solid #e5e7eb" }} elevation={0}>
-          <Typography variant="h4" fontWeight={700}>
-            Leave Request Overview
-          </Typography>
-
-          {/* ❗ ERROR STATE */}
-          {error && (
-            <Typography color="error" mt={2}>
-              {error}
-            </Typography>
-          )}
-
-          {/* ❗ LOADING */}
-          {loading && (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          )}
-
-          {/* ❗ NO DATA SAFE CHECK */}
-          {!loading && !error && !data && (
-            <Typography mt={2} color="text.secondary">
-              No leave request selected
-            </Typography>
-          )}
-
-          {/* DATA */}
-          {!loading && !error && data && (
-            <Stack spacing={2} mt={3}>
-              <Paper sx={{ p: 3, bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography fontWeight={700} color="#475569">
-                    REQUEST CREATED
-                  </Typography>
-
-                  <Chip label="Submitted" size="small" />
-                </Stack>
-
-                <Typography variant="h6" fontWeight={600} mt={2}>
-                  {formatDate(data.createdAt)}
-                </Typography>
-
-                <Typography variant="body2" color="text.secondary">
-                  Reason: {data.reason || "-"}
-                </Typography>
-              </Paper>
-
-              <Paper sx={{ p: 3, border: "1px solid #e5e7eb" }}>
-                <Stack direction="row" justifyContent="space-between">
-                  <Typography fontWeight={700} color="#475569">
-                    REQUEST STATUS
-                  </Typography>
-
-                  <Chip
-                    label={data.cuti ? "Approved" : "Pending"}
-                    size="small"
-                    color={data.cuti ? "success" : "warning"}
-                  />
-                </Stack>
-
-                <Typography variant="h6" fontWeight={600} mt={2}>
-                  {formatDate(data.approvedAt)}
-                </Typography>
-              </Paper>
-            </Stack>
-          )}
-        </Paper>
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
       </Box>
-    </Box>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: '#f7f7f8',
+        padding: '32px',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        color: '#111827',
+      }}
+    >
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <Button 
+          startIcon={<ArrowBackIcon />} 
+          onClick={() => navigate(-1)}
+          style={{ marginBottom: 20, color: '#6366f1', fontWeight: 600, textTransform: 'none' }}
+        >
+          Back to Leave List
+        </Button>
+
+        {error && (
+          <Alert severity="error" style={{ marginBottom: 20, borderRadius: 12 }}>
+            {error}
+          </Alert>
+        )}
+
+        {leave && (
+          <div
+            style={{
+              padding: '40px',
+              backgroundColor: '#ffffff',
+              borderRadius: 24,
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)',
+            }}
+          >
+            <div style={{ marginBottom: 40 }}>
+              <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+                Leave Timeline
+              </div>
+              <div style={{ marginTop: 12, color: '#6b7280', fontSize: 16 }}>
+                Tracking details for Request <strong>#{id?.slice(-6).toUpperCase()}</strong>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              {/* Vertical Connector Line */}
+              <div style={{
+                position: 'absolute',
+                left: '31px',
+                top: '40px',
+                bottom: '40px',
+                width: '2px',
+                backgroundColor: '#e5e7eb',
+                zIndex: 0
+              }} />
+
+              {/* Step 1: Creation */}
+              <div style={{ display: 'flex', gap: 24, marginBottom: 40, position: 'relative', zIndex: 1 }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 20, backgroundColor: '#eff6ff', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '4px solid #ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  fontSize: '24px'
+                }}>
+                  📝
+                </div>
+                <div style={{ flex: 1, padding: '24px', borderRadius: 20, backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', fontWeight: 800 }}>
+                      Submission
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+                    {formatDateTime(leave.createdAt)}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: 14 }}>
+                    Request successfully created by User ID: {leave.user_id}
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 2: Approval */}
+              <div style={{ display: 'flex', gap: 24, position: 'relative', zIndex: 1 }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 20, 
+                  backgroundColor: leave.approvedAt ? '#dcfce7' : '#fff7ed', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '4px solid #ffffff', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  fontSize: '24px'
+                }}>
+                  {leave.approvedAt ? '✅' : '⏳'}
+                </div>
+                <div style={{ 
+                  flex: 1, padding: '24px', borderRadius: 20, 
+                  backgroundColor: '#ffffff', 
+                  border: leave.approvedAt ? '2px solid #22c55e' : '1px solid #e5e7eb' 
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#64748b', fontWeight: 800 }}>
+                      Manager Approval
+                    </span>
+                    <span style={{ 
+                      padding: '4px 12px', borderRadius: 999, 
+                      backgroundColor: leave.approvedAt ? '#dcfce7' : '#fef3c7', 
+                      color: leave.approvedAt ? '#15803d' : '#92400e', 
+                      fontSize: 11, fontWeight: 800 
+                    }}>
+                      {leave.approvedAt ? 'COMPLETED' : 'PENDING'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
+                    {leave.approvedAt ? formatDateTime(leave.approvedAt) : "Pending Review"}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: 14 }}>
+                    {leave.approvedAt 
+                      ? "The department manager has officially approved this leave request."
+                      : "Waiting for the manager to review the reasons and schedule."}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

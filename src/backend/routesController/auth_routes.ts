@@ -7,6 +7,6 @@ const AuthRouter = express.Router();
 
 AuthRouter.post("/auth/login", controllerWrapper(loginStaffOrManager));
 AuthRouter.post("/auth/logout", authenticateJWT, controllerWrapper(logoutWeb));
-AuthRouter.put("/auth/users/:id/reset-password", authenticateJWT, controllerWrapper(resetPasswordStaff));
+AuthRouter.put("/auth/users/:email/reset-password", controllerWrapper(resetPasswordStaff));
 
 export default AuthRouter;
