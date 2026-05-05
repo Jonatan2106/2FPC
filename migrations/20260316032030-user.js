@@ -33,7 +33,8 @@ export default {
 
       },
       foto: { 
-        type: Sequelize.STRING 
+        type: Sequelize.TEXT, 
+        allowNull: true 
 
       },
       salary: { 

@@ -39,13 +39,13 @@ const Login: React.FC = () => {
       if (response.ok && data.message === "Login success") {
         const userData = {
           user_id: data.data.user_id,
-          name: data.data.username,
-          email: `${data.data.username}@company.local`,
+          name: data.data.name,
+          email: data.data.email,
           password: "", // never store password
-          alamat: "",
-          nomor_telepon: "",
-          foto: null,
-          salary: 0,
+          alamat: data.data.alamat || "",
+          nomor_telepon: data.data.nomor_telepon || "",
+          foto: data.data.foto || null,
+          salary: data.data.salary || 0,
           type: data.data.type,
         };
 

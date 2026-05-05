@@ -90,9 +90,10 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const { alamat, nomor_telepon, foto } = req.body;
+    const { name, alamat, nomor_telepon, foto } = req.body;
 
     await targetUser.update({
+      name: name ?? targetUser.name,
       alamat: alamat ?? targetUser.alamat,
       nomor_telepon: nomor_telepon ?? targetUser.nomor_telepon,
       foto: foto ?? targetUser.foto,
@@ -156,8 +157,13 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       message: "Login success",
       data: {
         user_id: existingUser.user_id,
-        username: existingUser.name,
+        name: existingUser.name,
+        email: existingUser.email,
+        alamat: existingUser.alamat,
+        nomor_telepon: existingUser.nomor_telepon,
+        foto: existingUser.foto,
         type: existingUser.type,
+        salary: existingUser.salary,
         token,
       },
     });
@@ -185,8 +191,11 @@ export const resetPasswordStaff = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update password tanpa mengecek oldPassword (sesuai alur Forgot Password)
-    await existingUser.update({ password: newPassword });
+    // Hash the new password before saving it
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    await existingUser.update({ password: hashedPassword });
 
     return res.status(200).json({ message: "Password reset success" });
   } catch (error) {

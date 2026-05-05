@@ -31,10 +31,11 @@ export class reimburse extends Model {
     declare approve: boolean;
 
     @Column({
-        type: DataType.STRING,
-        allowNull: true
+        type: DataType.DECIMAL(10, 2),
+        allowNull: true,
+        defaultValue: 0
     })
-    declare evidence: string;
+    declare amount: number;
 
     @Column({
         type: DataType.DATE,

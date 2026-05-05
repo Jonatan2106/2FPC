@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -6,7 +6,8 @@ import {
   Typography,
   TextField,
   Divider,
-  InputAdornment,
+  Button,
+  Alert,
 } from '@mui/material';
 import Navbar from '../../common/Navbar';
 
@@ -19,22 +20,48 @@ const formatCurrency = (value: number) =>
 
 const Payroll: React.FC = () => {
   const [staffName, setStaffName] = useState('');
-  const [baseSalary, setBaseSalary] = useState(0);
-  const [penalty, setPenalty] = useState(0);
-  const [reimburse, setReimburse] = useState(0);
-  const [leaveDays, setLeaveDays] = useState(0);
-  const [leaveDeductionPerDay, setLeaveDeductionPerDay] = useState(100000);
+  const [payrollData, setPayrollData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const leaveDeduction = useMemo(
-    () => Math.max(0, leaveDays * leaveDeductionPerDay),
-    [leaveDays, leaveDeductionPerDay],
-  );
+  const API_BASE_URL = "http://localhost:8080/api/web";
 
-  const netSalary = useMemo(
-    () => Math.max(0, baseSalary - penalty - leaveDeduction + reimburse),
-    [baseSalary, penalty, reimburse, leaveDeduction],
-  );
+  const getHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+  });
+
+  const handleGeneratePayroll = async () => {
+    if (!staffName.trim()) {
+      setError('Staff name is required');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setPayrollData(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/payroll/generate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ name: staffName.trim() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to generate payroll');
+      }
+
+      setPayrollData(result.data);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while generating payroll');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff', p: { xs: 2, md: 4 } }}>
@@ -87,77 +114,17 @@ const Payroll: React.FC = () => {
                   fullWidth
                 />
 
-                <Divider />
-
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Salary Components
-                </Typography>
-
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                    gap: 2,
-                  }}
+                <Button
+                  variant="contained"
+                  onClick={handleGeneratePayroll}
+                  disabled={loading}
+                  fullWidth
+                  size="large"
                 >
-                  <Box>
-                    <TextField
-                      label="Base Salary"
-                      type="number"
-                      value={baseSalary}
-                      onChange={(event) => setBaseSalary(Number(event.target.value) || 0)}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
-                      }}
-                    />
-                  </Box>
-                  <Box>
-                    <TextField
-                      label="Reimburse"
-                      type="number"
-                      value={reimburse}
-                      onChange={(event) => setReimburse(Number(event.target.value) || 0)}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
-                      }}
-                    />
-                  </Box>
-                  <Box>
-                    <TextField
-                      label="Penalty"
-                      type="number"
-                      value={penalty}
-                      onChange={(event) => setPenalty(Number(event.target.value) || 0)}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
-                      }}
-                    />
-                  </Box>
-                  <Box>
-                    <TextField
-                      label="Leave Days"
-                      type="number"
-                      value={leaveDays}
-                      onChange={(event) => setLeaveDays(Number(event.target.value) || 0)}
-                      fullWidth
-                    />
-                  </Box>
-                  <Box>
-                    <TextField
-                      label="Deduction per Leave Day"
-                      type="number"
-                      value={leaveDeductionPerDay}
-                      onChange={(event) => setLeaveDeductionPerDay(Number(event.target.value) || 0)}
-                      fullWidth
-                      InputProps={{
-                        startAdornment: <InputAdornment position="start">Rp</InputAdornment>,
-                      }}
-                    />
-                  </Box>
-                </Box>
+                  {loading ? 'Generating...' : 'Generate Payroll'}
+                </Button>
+
+                {error && <Alert severity="error">{error}</Alert>}
               </Stack>
             </Paper>
           </Box>
@@ -177,59 +144,65 @@ const Payroll: React.FC = () => {
                 Payroll Summary
               </Typography>
 
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Staff Name
-                  </Typography>
-                  <Typography variant="body1">{staffName || '-'} </Typography>
-                </Box>
+              {payrollData ? (
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Staff Name
+                    </Typography>
+                    <Typography variant="body1">{payrollData.staff_name || '-'} </Typography>
+                  </Box>
 
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Payment Date
-                  </Typography>
-                  <Typography variant="body1">{payDate}</Typography>
-                </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Payment Date
+                    </Typography>
+                    <Typography variant="body1">{payDate}</Typography>
+                  </Box>
 
-                <Divider />
+                  <Divider />
 
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Base Salary
-                  </Typography>
-                  <Typography variant="body1">{formatCurrency(baseSalary)}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Penalty
-                  </Typography>
-                  <Typography variant="body1">-{formatCurrency(penalty)}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Reimburse
-                  </Typography>
-                  <Typography variant="body1">{formatCurrency(reimburse)}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Leave Deduction
-                  </Typography>
-                  <Typography variant="body1">-{formatCurrency(leaveDeduction)}</Typography>
-                </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Base Salary
+                    </Typography>
+                    <Typography variant="body1">{formatCurrency(payrollData.base_salary || 0)}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Penalty
+                    </Typography>
+                    <Typography variant="body1">-{formatCurrency(payrollData.total_penalty || 0)}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Reimburse
+                    </Typography>
+                    <Typography variant="body1">{formatCurrency(payrollData.total_reimburse || 0)}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Leave Deduction ({payrollData.leave_days || 0} days)
+                    </Typography>
+                    <Typography variant="body1">-{formatCurrency(payrollData.leave_deduction || 0)}</Typography>
+                  </Box>
 
-                <Divider />
+                  <Divider />
 
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Net Salary Total
-                  </Typography>
-                  <Typography variant="h5" fontWeight={700} mt={1}>
-                    {formatCurrency(netSalary)}
-                  </Typography>
-                </Box>
-              </Stack>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Net Salary Total
+                    </Typography>
+                    <Typography variant="h5" fontWeight={700} mt={1}>
+                      {formatCurrency(payrollData.final_salary || 0)}
+                    </Typography>
+                  </Box>
+                </Stack>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Enter staff name and click Generate Payroll to view summary.
+                </Typography>
+              )}
             </Paper>
           </Box>
         </Box>

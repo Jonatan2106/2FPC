@@ -68,25 +68,6 @@ const ViewAttendance: React.FC = () => {
     void fetchAttendance();
   }, []);
 
-  const handleGenerateQr = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/attendance/qr`, {
-        method: "GET",
-        headers: getHeaders(),
-      });
-
-      const data = await response.json();
-
-      // Open QR code in new window or display modal
-      if (response.ok && data.data) {
-        window.open(data.data.qrCode, "_blank");
-      }
-    } catch (err) {
-      setError("An error occurred while generating QR code");
-      console.error(err);
-    }
-  };
-
   return (
     <Box
       sx={{
@@ -116,13 +97,6 @@ const ViewAttendance: React.FC = () => {
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2, maxWidth: 800 }}>{error}</Alert>}
-
-      {/* Generate QR Button */}
-      <Box sx={{ mb: 3 }}>
-        <Button variant="outlined" onClick={handleGenerateQr}>
-          Generate Check-in QR Code
-        </Button>
-      </Box>
 
       {loading ? (
         <Box display="flex" justifyContent="center" py={4}>
