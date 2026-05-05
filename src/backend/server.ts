@@ -21,7 +21,7 @@ const startServer = async () => {
 
   const server = app.listen(port, host, () => {
     console.log(`✅ Backend running on http://${host}:${port}`);
-    console.log(`📱 Mobile app can connect to http://192.168.100.6:${port}/api`);
+    console.log(`📱 Mobile app can connect to http://10.19.173.126:${port}/api`);
   });
 
   // Initialize cron jobs for daily reset

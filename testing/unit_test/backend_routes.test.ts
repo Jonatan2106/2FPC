@@ -23,6 +23,14 @@ describe("Backend Routers Testing", () => {
 	const uniqueSuffix = `${Date.now()}`;
 
 	beforeAll(async () => {
+		await User.update(
+			{
+				device_id: null,
+				device_login_date: null,
+			},
+			{ where: { type: "Admin" } }
+		);
+
 		const adminAccount =
 			(await User.findOne({ where: { type: "Admin", password: "admin123" } })) ??
 			(await User.findOne({ where: { type: "Admin", password: "admin1234" } }));
@@ -495,6 +503,27 @@ describe("Backend Routers Testing", () => {
 			.set(authHeader(mobileToken));
 
 		expect(res.status).toBe(200);
+	});
+
+	it("Reject login from another device when account already bound", async () => {
+		await User.update(
+			{
+				device_id: "locked-device-001",
+				device_login_date: new Date().toISOString().split("T")[0],
+			},
+			{ where: { user_id: adminUserId } }
+		);
+
+		const res = await request(app)
+			.get("/api/web/auth/login")
+			.query({
+				username: "admin",
+				password: "admin123",
+				device_id: "different-device-002",
+			});
+
+		expect(res.status).toBe(403);
+		expect(res.body.message).toContain("already logged in on another device");
 	});
 });
 

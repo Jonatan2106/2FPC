@@ -141,6 +141,16 @@ export const loginStaffOrManager = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Prevent another device from logging into an account that is already bound to a different device.
+    if (existingUser.device_id && existingUser.device_id !== deviceId) {
+      return res.status(403).json({
+        message: "This account is already logged in on another device. Please use the same device or contact admin to reset the session.",
+        data: {
+          lockedDeviceId: existingUser.device_id,
+        },
+      });
+    }
+
     // Check device lock - prevent same device from logging in to multiple accounts per day
     if (deviceId) {
       const lockStatus = await checkDeviceLock(deviceId, existingUser.user_id);

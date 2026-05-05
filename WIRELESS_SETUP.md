@@ -5,7 +5,7 @@ Aplikasi **sudah bisa dijalankan tanpa kabel USB** dan tetap terhubung ke backen
 ## Status Saat Ini
 
 ✅ **Wireless ADB**: Device `192.168.100.2:5555` aktif  
-✅ **Backend**: Running di `http://192.168.100.6:8080`  
+✅ **Backend**: Running di `http://10.19.173.126:8080`  
 ✅ **Mobile App**: Sudah terpasang di HP dengan API Base URL benar  
 ⚠️ **Database**: Belum terkoneksi (bisa di-fix nanti)  
 
@@ -19,7 +19,7 @@ npm run backend:start
 Output:
 ```
 ✅ Backend running on http://0.0.0.0:8080
-📱 Mobile app can connect to http://192.168.100.6:8080/api
+📱 Mobile app can connect to http://10.19.173.126:8080/api
 ```
 
 ### 2️⃣ Terminal 2 - Mobile App
@@ -30,7 +30,7 @@ cd mobile
 
 Atau dengan IP manual:
 ```bash
-./run-wireless.ps1 -LaptopIp 192.168.100.6
+./run-wireless.ps1 -LaptopIp 10.19.173.126
 ```
 
 ### 3️⃣ Akses dari HP
@@ -62,7 +62,7 @@ npm run backend:start
 
 **Test backend health:**
 ```bash
-curl http://192.168.100.6:8080/health
+curl http://10.19.173.126:8080/health
 ```
 
 **Lihat devices terhubung:**
@@ -86,7 +86,7 @@ Laptop (Windows)
 WiFi Network (192.168.100.x)
   └─ HP Android (192.168.100.2)
       └─ Mobile App
-          └─ Connects to http://192.168.100.6:8080/api
+          └─ Connects to http://10.19.173.126:8080/api
 ```
 
 ---
