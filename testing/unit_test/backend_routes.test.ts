@@ -11,6 +11,7 @@ describe("Backend Routers Testing", () => {
 	let adminUserId = "";
 	let staffToken = "";
 	let staffUserId = "";
+	let staffEmail = "";
 	let departmentId = "";
 	let managementTreeDepartmentId = "";
 	let webAttendanceId = "";
@@ -31,17 +32,16 @@ describe("Backend Routers Testing", () => {
 			{ where: { type: "Admin" } }
 		);
 
-		const adminAccount =
-			(await User.findOne({ where: { type: "Admin", password: "admin123" } })) ??
-			(await User.findOne({ where: { type: "Admin", password: "admin1234" } }));
+		// Find any admin account
+		const adminAccount = await User.findOne({ where: { type: "Admin" } });
 
 		expect(adminAccount).not.toBeNull();
 
 		const adminLoginRes = await request(app)
-			.get("/api/web/auth/login")
-			.query({
+			.post("/api/web/auth/login")
+			.send({
 				username: String(adminAccount?.name),
-				password: String(adminAccount?.password),
+				password: "admin123",  // Use the known password from migration
 			});
 
 		expect(adminLoginRes.status).toBe(200);
@@ -78,26 +78,25 @@ describe("Backend Routers Testing", () => {
 		staffUserId = String(createStaffRes.body.data.user_id);
 
 		const staffLoginRes = await request(app)
-			.get("/api/web/auth/login")
-			.query({ username: staffUsername, password: staffPassword });
+			.post("/api/web/auth/login")
+			.send({ username: staffUsername, password: staffPassword });
 
 		expect(staffLoginRes.status).toBe(200);
+		staffEmail = String(staffLoginRes.body.data.email);
 		staffToken = staffLoginRes.body.data.token;
 		staffQrCode = staffLoginRes.body.data.qr_code;
 	});
 
 	it("Login web auth", async () => {
-		const adminAccount =
-			(await User.findOne({ where: { type: "Admin", password: "admin123" } })) ??
-			(await User.findOne({ where: { type: "Admin", password: "admin1234" } }));
+		const adminAccount = await User.findOne({ where: { type: "Admin" } });
 
 		expect(adminAccount).not.toBeNull();
 
 		const res = await request(app)
-			.get("/api/web/auth/login")
-			.query({
+			.post("/api/web/auth/login")
+			.send({
 				username: String(adminAccount?.name),
-				password: String(adminAccount?.password),
+				password: "admin123",
 			});
 
 		expect(res.status).toBe(200);
@@ -114,10 +113,9 @@ describe("Backend Routers Testing", () => {
 
 	it("Reset staff password", async () => {
 		const res = await request(app)
-			.put(`/api/web/auth/users/${staffUserId}/reset-password`)
+			.put(`/api/web/auth/users/${staffEmail}/reset-password`)
 			.set(authHeader(adminToken))
 			.send({
-				oldPassword: staffPassword,
 				newPassword: updatedStaffPassword,
 			});
 
@@ -405,7 +403,7 @@ describe("Backend Routers Testing", () => {
 			.post("/api/web/payroll/generate")
 			.set(authHeader(adminToken))
 			.send({
-				user_id: staffUserId,
+				name: staffUsername,
 			});
 
 		expect(res.status).toBe(201);
@@ -506,18 +504,20 @@ describe("Backend Routers Testing", () => {
 	});
 
 	it("Reject login from another device when account already bound", async () => {
+		const adminAccount = await User.findOne({ where: { type: "Admin" } });
+
 		await User.update(
 			{
 				device_id: "locked-device-001",
 				device_login_date: new Date().toISOString().split("T")[0],
 			},
-			{ where: { user_id: adminUserId } }
+			{ where: { user_id: adminAccount?.user_id } }
 		);
 
 		const res = await request(app)
-			.get("/api/web/auth/login")
-			.query({
-				username: "admin",
+			.post("/api/web/auth/login")
+			.send({
+				username: String(adminAccount?.name),
 				password: "admin123",
 				device_id: "different-device-002",
 			});

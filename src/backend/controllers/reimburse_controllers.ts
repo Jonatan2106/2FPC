@@ -3,15 +3,25 @@ import { reimburse as Reimburse } from "../../../models/reimburse";
 
 export const createReimburseRequestStaff = async (req: Request, res: Response) => {
   try {
-    const { user_id, evidence } = req.body;
+    const { user_id, evidence, amount } = req.body as {
+      user_id?: string;
+      evidence?: string;
+      amount?: number | string;
+    };
 
     if (!user_id || !evidence) {
       return res.status(400).json({ message: "user_id and evidence are required" });
     }
 
+    const parsedAmount = typeof amount === "string" ? Number(amount) : amount;
+    const normalizedAmount = Number.isFinite(parsedAmount as number) && (parsedAmount as number) > 0
+      ? Number(parsedAmount)
+      : 0;
+
     const reimburseData = await Reimburse.create({
       user_id,
       evidence,
+      amount: normalizedAmount,
       approve: false,
       approvedAt: null,
     });
@@ -30,11 +40,15 @@ export const approveOrDeclineReimburseManager = async (req: Request, res: Respon
       return res.status(404).json({ message: "Reimburse request not found" });
     }
 
-    const { approve } = req.body as { approve?: boolean };
+    const body = (req.body ?? {}) as { approve?: boolean; decision?: string };
+    const approve =
+      typeof body.approve === "boolean"
+        ? body.approve
+        : body.decision === "approved";
 
     await reimburseData.update({
-      approve: approve === true,
-      approvedAt: new Date(),
+      approve,
+      approvedAt: approve ? new Date() : null,
     });
 
     return res.status(200).json({ message: "Reimburse request processed", data: reimburseData });

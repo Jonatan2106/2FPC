@@ -5,6 +5,21 @@ import { penalty as Penalty } from "../../../models/penalty";
 import { reimburse as Reimburse } from "../../../models/reimburse";
 import { leave_management as LeaveManagement } from "../../../models/leave_management";
 
+const extractReimburseAmount = (item: { amount?: number | null; evidence?: string | null }) => {
+  if (typeof item.amount === "number" && Number.isFinite(item.amount) && item.amount > 0) {
+    return item.amount;
+  }
+
+  const evidenceText = item.evidence ?? "";
+  const match = evidenceText.match(/nominal\s*:\s*([0-9][0-9.,]*)/i);
+  if (!match) {
+    return 0;
+  }
+
+  const numeric = Number(match[1].replace(/,/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+};
+
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
     const { name } = req.body;
@@ -27,7 +42,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
 
     // Calculate total reimburse (only approved)
     const reimburses = await Reimburse.findAll({ where: { user_id, approve: true } });
-    const totalReimburse = reimburses.reduce((acc, item) => acc + (item.amount ?? 0), 0);
+    const totalReimburse = reimburses.reduce((acc, item) => acc + extractReimburseAmount(item), 0);
 
     // Calculate total leave days (approved leaves)
     const leaveCount = await LeaveManagement.count({ where: { user_id, cuti: true } });

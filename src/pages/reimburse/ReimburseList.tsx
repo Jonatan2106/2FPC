@@ -69,7 +69,7 @@ const ReimburseList: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ decision: "approved" }),
+        body: JSON.stringify({ approve: true }),
       });
 
       const data = await response.json();
@@ -102,7 +102,7 @@ const ReimburseList: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ decision: "declined" }),
+        body: JSON.stringify({ approve: false }),
       });
 
       const data = await response.json();
@@ -186,7 +186,11 @@ const ReimburseList: React.FC = () => {
                     >
                       <TableCell>{r.user_id}</TableCell>
 
-                    <TableCell>-</TableCell>
+                    <TableCell>
+                      {typeof r.amount === "number" && r.amount > 0
+                        ? r.amount.toLocaleString("id-ID")
+                        : "0"}
+                    </TableCell>
 
                     <TableCell>
                       {r.evidence ? (

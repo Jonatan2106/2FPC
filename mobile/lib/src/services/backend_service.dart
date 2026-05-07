@@ -159,6 +159,8 @@ class BackendService {
       if (request.type == RequestType.reimburse)
         'evidence':
             '${request.description} | nominal: ${request.amount?.toStringAsFixed(0) ?? '-'} | tanggal: ${DateFormat('yyyy-MM-dd').format(request.date)}',
+      if (request.type == RequestType.reimburse && request.amount != null)
+        'amount': request.amount,
     };
 
     await _postJson(path: path, token: user.token, body: payload);
