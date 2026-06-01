@@ -2,8 +2,54 @@ import type { Request, Response } from "express";
 import QRCode from "qrcode";
 import { attendance as Attendance } from "../../../models/attendance";
 import { user as User } from "../../../models/user";
+import { staff_detail as StaffDetail } from "../../../models/staff_details";
+import { departement as Departement } from "../../../models/departements";
+import { Op } from "sequelize";
 import { generateAttendanceQrToken, verifyToken } from "../utils/jwt_helper";
 
+const getRequesterAttendanceScope = async (req: Request): Promise<string[] | null> => {
+  const requesterId = req.headers["x-user-id"] as string | undefined;
+  const requesterRole = req.headers["x-user-role"] as string | undefined;
+
+  if (!requesterId) {
+    return [];
+  }
+
+  if (requesterRole === "Admin") {
+    return null;
+  }
+
+  if (requesterRole === "Manager") {
+    const requester = await User.findByPk(requesterId, {
+      include: [
+        {
+          model: StaffDetail,
+          attributes: ["departement_id"],
+        },
+      ],
+    });
+
+    const departementId = requester?.staff_detail?.departement_id;
+    if (!departementId) {
+      return [];
+    }
+
+    const departmentUsers = await User.findAll({
+      attributes: ["user_id"],
+      include: [
+        {
+          model: StaffDetail,
+          attributes: [],
+          where: { departement_id: departementId },
+        },
+      ],
+    });
+
+    return departmentUsers.map((user) => user.user_id);
+  }
+
+  return [requesterId];
+};
 export const clockInAttendanceStaff = async (req: Request, res: Response) => {
   try {
     const { user_id } = req.body;
@@ -41,11 +87,66 @@ export const clockOutAttendanceStaff = async (req: Request, res: Response) => {
 
 export const getAttendanceData = async (req: Request, res: Response) => {
   try {
+    const allowedUserIds = await getRequesterAttendanceScope(req);
     const userId = req.query.user_id as string | undefined;
-    const whereClause = userId ? { user_id: userId } : undefined;
-    const attendanceData = await Attendance.findAll({ where: whereClause });
 
-    return res.status(200).json({ message: "Attendance fetched", data: attendanceData });
+    const whereClause: Record<string, unknown> = {};
+
+    if (allowedUserIds !== null) {
+      whereClause.user_id = {
+        [Op.in]: allowedUserIds.length > 0 ? allowedUserIds : ["__no_match__"],
+      };
+    }
+
+    if (userId) {
+      if (allowedUserIds !== null && !allowedUserIds.includes(userId)) {
+        whereClause.user_id = { [Op.in]: ["__no_match__"] };
+      } else {
+        whereClause.user_id = userId;
+      }
+    }
+
+    const attendanceData = await Attendance.findAll({
+      where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+      include: [
+        {
+          model: User,
+          as: "user_data",
+          attributes: ["user_id", "name"],
+          include: [
+            {
+              model: StaffDetail,
+              as: "staff_detail",
+              attributes: ["departement_id"],
+              include: [
+                {
+                  model: Departement,
+                  as: "departement_data",
+                  attributes: ["company_name"],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const shaped = attendanceData.map((item) => ({
+      attendance_id: item.attendance_id,
+      user_id: item.user_id,
+      clock_in: item.clock_in,
+      clock_out: item.clock_out,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      user: {
+        id: item.user_data?.user_id ?? item.user_id,
+        name: item.user_data?.name ?? null,
+        departement: item.user_data?.staff_detail?.departement_data?.company_name ?? null,
+      },
+    }));
+
+    return res.status(200).json({ message: "Attendance fetched", data: shaped });
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch attendance", error });
   }

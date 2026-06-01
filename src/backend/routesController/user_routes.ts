@@ -7,6 +7,7 @@ import {
   getUserByIdAdmin,
   verifyQrCode,
   getUserQrCode,
+  updateStaffDetailsAdmin,
 } from "../controllers/user_controllers";
 import { authenticateJWT } from "../middleware/auth_middleware";
 import { controllerWrapper } from "../utils/controllerWrapper";
@@ -18,6 +19,9 @@ UserRouter.put("/admin/users/:id", authenticateJWT, controllerWrapper(updateUser
 UserRouter.get("/admin/users", authenticateJWT, controllerWrapper(getAllUsersAdmin));
 UserRouter.get("/admin/users/:id", authenticateJWT, controllerWrapper(getUserByIdAdmin));
 UserRouter.put("/staff/users/:id/profile", authenticateJWT, controllerWrapper(updateOwnProfileStaff));
+
+// Update staff details (role, departement)
+UserRouter.put("/admin/staff-details/:id", authenticateJWT, controllerWrapper(updateStaffDetailsAdmin));
 
 // QR Code endpoints
 UserRouter.post("/qr/verify", controllerWrapper(verifyQrCode));

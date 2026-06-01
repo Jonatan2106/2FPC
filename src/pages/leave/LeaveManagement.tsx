@@ -12,7 +12,6 @@ import {
   Drawer,
   CircularProgress,
   Alert,
-  Link,
 } from "@mui/material";
 
 import type { LeaveManagements } from "../../types/leave_management";
@@ -164,17 +163,17 @@ const LeaveManagement: React.FC = () => {
         ) : (
           <>
             <Box
+              className="table-limited-5 hide-scrollbar"
               sx={{
                 border: "1px solid #e0e0e0",
                 borderRadius: 2,
-                overflow: "hidden",
                 backgroundColor: "#fff",
               }}
             >
-              <Table>
-                <TableHead>
+              <Table stickyHeader>
+                <TableHead sx={{ position: "sticky", top: 0, zIndex: 5 }}>
                   <TableRow sx={{ backgroundColor: "#fafafa" }}>
-                    <TableCell><b>Staff ID</b></TableCell>
+                    <TableCell><b>Staff</b></TableCell>
                     <TableCell><b>Reason</b></TableCell>
                     <TableCell><b>Status</b></TableCell>
                     <TableCell><b>Created At</b></TableCell>
@@ -191,7 +190,10 @@ const LeaveManagement: React.FC = () => {
                       sx={{ cursor: "pointer" }}
                       onClick={() => setSelected(l)}
                     >
-                      <TableCell>{l.user_id}</TableCell>
+                      <TableCell>
+                        <div>{l.user?.name ?? l.user_id}</div>
+                        <div style={{ fontSize: 12, color: '#666' }}>{l.user?.departement ?? ''}</div>
+                      </TableCell>
 
                       <TableCell>
                         {l.reason || "-"}
@@ -284,9 +286,10 @@ const LeaveManagement: React.FC = () => {
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">
-                        Staff ID
+                        Staff
                       </Typography>
-                      <Typography>{selected.user_id}</Typography>
+                      <Typography>{selected.user?.name ?? selected.user_id}</Typography>
+                      <Typography variant="caption" color="text.secondary">{selected.user?.departement ?? ''}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">

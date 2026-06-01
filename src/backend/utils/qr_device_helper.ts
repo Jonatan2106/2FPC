@@ -87,16 +87,17 @@ export const saveUserQrAndDevice = async (
  * Dipanggil oleh cron job setiap tengah malam
  */
 export const resetDailyQrAndDevice = async (): Promise<number> => {
-  const today = new Date().toISOString().split("T")[0];
-
   // Reset QR jika sudah kadaluarsa
   const [affectedCount] = await User.sequelize!.query(
-    `UPDATE users 
-     SET qr_code = NULL, device_login_date = NULL 
+    `UPDATE users
+     SET qr_code = NULL,
+         device_login_date = NULL,
+         device_id = NULL,
+         qr_expires_at = NULL
      WHERE qr_expires_at <= NOW()`
   );
 
-  console.log(`[Daily Reset] Reset QR & device lock untuk ${affectedCount} users`);
+  console.log(`[Daily Reset] Reset QR, device_id, and device_login_date for ${affectedCount} users`);
   return affectedCount as unknown as number;
 };
 

@@ -134,7 +134,7 @@ const AdminUsersPage: React.FC = () => {
                         </TableCell>
 
                         <TableCell>
-                        {staff?.departement_data?.name || "-"}
+                        {staff?.departement_data?.company_name || staff?.departement_name || "-"}
                         </TableCell>
 
                         <TableCell>{user.salary ?? "-"}</TableCell>

@@ -71,7 +71,7 @@ class BackendService {
       userId: (data['user_id'] ?? '').toString(),
       username: (data['username'] ?? username).toString(),
       token: token,
-      role: (data['type'] ?? 'Staff').toString(),
+      role: (data['role'] ?? data['type'] ?? 'Staff').toString(),
     );
 
     await _saveSession(session);

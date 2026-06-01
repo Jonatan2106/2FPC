@@ -1,7 +1,6 @@
 import app from "./app";
 import { sequelize } from "./config/sequelize";
 import { initializeCronJobs } from "./utils/cron_jobs";
-import path from "path";
 
 
 const port = Number(process.env.PORT || 8080);
@@ -21,7 +20,7 @@ const startServer = async () => {
 
   const server = app.listen(port, host, () => {
     console.log(`✅ Backend running on http://${host}:${port}`);
-    console.log(`📱 Mobile app can connect to http://10.19.173.126:${port}/api`);
+    console.log(`📱 Mobile app can connect to http://192.168.67.1:${port}/api`);
   });
 
   // Initialize cron jobs for daily reset

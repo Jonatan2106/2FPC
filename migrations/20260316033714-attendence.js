@@ -16,7 +16,7 @@ export default {
       },
       user_id: {
         type: Sequelize.UUID,
-        references: { model: 'staff_details', key: 'user_id' },
+        references: { model: 'users', key: 'user_id' },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },

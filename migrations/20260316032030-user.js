@@ -41,6 +41,27 @@ export default {
         type: Sequelize.INTEGER 
 
       },
+      qr_code: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true
+      },
+      qr_expires_at: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
+      device_id: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      device_login_date: {
+        type: Sequelize.DATEONLY,
+        allowNull: true
+      },
+      last_login_at: {
+        type: Sequelize.DATE,
+        allowNull: true
+      },
       createdAt: { 
         type: Sequelize.DATE, 
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') 

@@ -20,7 +20,6 @@ const Penalty: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState("");
 
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
 
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
@@ -80,12 +79,6 @@ const Penalty: React.FC = () => {
 
     setFile(selected);
 
-    if (selected.type.startsWith("image/")) {
-      setPreview(URL.createObjectURL(selected));
-    } else {
-      setPreview(null);
-    }
-
     // store filename in note (since backend has no evidence field)
     setNote(selected.name);
   };
@@ -121,7 +114,6 @@ const Penalty: React.FC = () => {
         setNote("");
         setAmount("");
         setFile(null);
-        setPreview(null);
 
         setTimeout(() => setSuccess(false), 2000);
       } else {

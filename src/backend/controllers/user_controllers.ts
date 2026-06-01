@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { user as User } from "../../../models/user";
 import { departement as Departement } from "../../../models/departements";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
+import { user as UserModel } from "../../../models/user";
 import { generateToken } from "../utils/jwt_helper";
 import bcrypt from "bcrypt";
 import {
@@ -13,6 +14,164 @@ import {
 } from "../utils/qr_device_helper";
 
 type StaffRole = "Manager" | "Staff";
+type EffectiveRole = "Admin" | StaffRole;
+
+const resolveEffectiveRole = async (existingUser: User): Promise<EffectiveRole> => {
+  if (existingUser.type === "Admin") {
+    return "Admin";
+  }
+
+  const staffDetail = await StaffDetail.findOne({
+    where: { user_id: existingUser.user_id },
+  });
+
+  return staffDetail?.role === "Manager" ? "Manager" : "Staff";
+};
+
+const buildLoginPayload = (existingUser: User, role: EffectiveRole, token: string, qrData: string, qrImage: string, deviceId: string | null) => ({
+  user_id: existingUser.user_id,
+  name: existingUser.name,
+  email: existingUser.email,
+  alamat: existingUser.alamat,
+  nomor_telepon: existingUser.nomor_telepon,
+  foto: existingUser.foto,
+  type: existingUser.type,
+  role,
+  salary: existingUser.salary,
+  token,
+  qr_code: qrData,
+  qr_image: qrImage,
+  device_id: deviceId,
+  qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
+});
+
+const getRequesterAccess = async (req: Request) => {
+  const requesterId = req.headers["x-user-id"] as string | undefined;
+  const requesterRole = req.headers["x-user-role"] as string | undefined;
+
+  if (!requesterId) {
+    return null;
+  }
+
+  if (requesterRole === "Admin") {
+    return { role: "Admin" as const, departementId: null };
+  }
+
+  const requester = await UserModel.findByPk(requesterId, {
+    include: [
+      {
+        model: StaffDetail,
+        attributes: ["role", "departement_id"],
+      },
+    ],
+  });
+
+  return {
+    role: (requester?.staff_detail?.role === "Manager" ? "Manager" : "Staff") as StaffRole,
+    departementId: requester?.staff_detail?.departement_id ?? null,
+  };
+};
+
+const getDepartementDisplayName = async (departementId?: string | null): Promise<string | null> => {
+  if (!departementId) {
+    return null;
+  }
+
+  const departement = await Departement.findByPk(departementId, {
+    attributes: ["company_name"],
+  });
+
+  return departement?.company_name ?? null;
+};
+
+const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile") => {
+  try {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const username = (req.query.username as string) || (body.username as string) || "";
+    const password = (req.query.password as string) || (body.password as string) || "";
+    const deviceId = (req.query.device_id as string) || (body.device_id as string) || null;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        message: "username and password are required",
+      });
+    }
+
+    const existingUser = await User.findOne({
+      where: { name: username },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, existingUser.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        message: "Invalid credentials",
+      });
+    }
+
+    const effectiveRole = await resolveEffectiveRole(existingUser);
+
+    if (channel === "web" && effectiveRole === "Staff") {
+      return res.status(403).json({
+        message: "Staff tidak dapat login ke web. Gunakan aplikasi mobile.",
+      });
+    }
+
+    const qrData = await generateUserQrCode(existingUser.user_id);
+    const qrImage = await generateQrImage(qrData);
+
+    if (channel === "mobile" && (effectiveRole === "Manager" || effectiveRole === "Admin")) {
+      if (existingUser.device_id && existingUser.device_id !== deviceId) {
+        return res.status(403).json({
+          message: `${effectiveRole} hanya boleh login di satu device aplikasi. Gunakan device yang sama atau reset sesi terlebih dahulu.`,
+          data: {
+            lockedDeviceId: existingUser.device_id,
+          },
+        });
+      }
+
+      if (deviceId) {
+        const lockStatus = await checkDeviceLock(deviceId, existingUser.user_id);
+        if (lockStatus.isLocked) {
+          return res.status(403).json({
+            message: `Device ini sudah dipakai ${effectiveRole.toLowerCase()} lain (${lockStatus.lockedUsername}) hari ini. Coba lagi besok.`,
+            data: {
+              lockedUserId: lockStatus.lockedUserId,
+              lockedUsername: lockStatus.lockedUsername,
+            },
+          });
+        }
+      }
+
+      await saveUserQrAndDevice(existingUser.user_id, qrData, deviceId);
+    }
+
+    const token = generateToken({
+      userId: existingUser.user_id,
+      username: existingUser.name,
+      role: effectiveRole,
+      purpose: "auth",
+    });
+
+    return res.status(200).json({
+      message: "Login success",
+      data: buildLoginPayload(existingUser, effectiveRole, token, qrData, qrImage, deviceId),
+    });
+  } catch (error) {
+    console.error("[handleLogin] Error:", error);
+    const errMsg = error instanceof Error ? error.message : error;
+    return res.status(500).json({
+      message: "Failed to login",
+      error: errMsg,
+    });
+  }
+};
 
 export const createStaffAccountAdmin = async (req: Request, res: Response) => {
   try {
@@ -30,6 +189,8 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
     const email = `${username.toLowerCase().replace(/\s+/g, ".")}@company.local`;
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash("changeme123", saltRounds);
+    const departementName = await getDepartementDisplayName(departement_id || null);
+
     const newUser = await User.create({
       name: username,
       email,
@@ -39,6 +200,8 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
 
     await StaffDetail.create({
       user_id: newUser.user_id,
+      name: newUser.name,
+      departement_name: departementName,
       role: normalizedRole,
       departement_id: departement_id || null,
     });
@@ -83,6 +246,18 @@ export const updateUserProfileAdmin = async (req: Request, res: Response) => {
     }
 
     await targetUser.update(payload);
+
+    console.log('[updateUserProfileAdmin] updating user', targetUser.user_id, 'with payload', payload);
+
+    if (payload.name !== undefined) {
+      await StaffDetail.update(
+        { name: payload.name as string },
+        { where: { user_id: targetUser.user_id } }
+      );
+    }
+
+    await targetUser.reload();
+
     return res.status(200).json({ message: "User profile updated", data: targetUser });
   } catch (error) {
     return res.status(500).json({ message: "Failed to update user profile", error });
@@ -106,6 +281,13 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
       foto: foto ?? targetUser.foto,
     });
 
+    if (name !== undefined) {
+      await StaffDetail.update(
+        { name: targetUser.name },
+        { where: { user_id: targetUser.user_id } }
+      );
+    }
+
     return res.status(200).json({
       message: "Profile updated",
       data: {
@@ -123,103 +305,11 @@ export const updateOwnProfileStaff = async (req: Request, res: Response) => {
 
 
 export const loginStaffOrManager = async (req: Request, res: Response) => {
-  try {
-    const body = (req.body ?? {}) as Record<string, unknown>;
-    const deviceId =
-      (req.query.device_id as string) || (body.device_id as string) || null; // Device identifier (IMEI, Android ID, or generated UUID)
-    const { username, password } = req.body;
+  return handleLogin(req, res, "mobile");
+};
 
-    if (!username || !password) {
-      return res.status(400).json({
-        message: "username and password are required",
-      });
-    }
-
-    const existingUser = await User.findOne({
-      where: { name: username },
-    });
-
-    if (!existingUser) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      existingUser.password
-    );
-
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Invalid credentials",
-      });
-    }
-
-    // Prevent another device from logging into an account that is already bound to a different device.
-    if (existingUser.device_id && existingUser.device_id !== deviceId) {
-      return res.status(403).json({
-        message: "This account is already logged in on another device. Please use the same device or contact admin to reset the session.",
-        data: {
-          lockedDeviceId: existingUser.device_id,
-        },
-      });
-    }
-
-    // Check device lock - prevent same device from logging in to multiple accounts per day
-    if (deviceId) {
-      const lockStatus = await checkDeviceLock(deviceId, existingUser.user_id);
-      if (lockStatus.isLocked) {
-        return res.status(403).json({
-          message: `This device is already logged in to another account (${lockStatus.lockedUsername}) today. Please try again tomorrow.`,
-          data: {
-            lockedUserId: lockStatus.lockedUserId,
-            lockedUsername: lockStatus.lockedUsername,
-          },
-        });
-      }
-    }
-
-    const qrData = await generateUserQrCode(existingUser.user_id);
-    const qrImage = await generateQrImage(qrData);
-
-    // Save QR & device info to user record
-    await saveUserQrAndDevice(existingUser.user_id, qrData, deviceId);
-
-    // Generate auth token
-    const token = generateToken({
-      userId: existingUser.user_id,
-      username: existingUser.name,
-      role: existingUser.type,
-      purpose: "auth",
-    });
-
-    return res.status(200).json({
-      message: "Login success",
-      data: {
-        user_id: existingUser.user_id,
-        name: existingUser.name,
-        email: existingUser.email,
-        alamat: existingUser.alamat,
-        nomor_telepon: existingUser.nomor_telepon,
-        foto: existingUser.foto,
-        type: existingUser.type,
-        salary: existingUser.salary,
-        token,
-        qr_code: qrData,
-        qr_image: qrImage,
-        device_id: deviceId || null,
-        qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
-      },
-    });
-  } catch (error) {
-    console.error("[loginStaffOrManager] Error:", error);
-    const errMsg = error instanceof Error ? error.message : error;
-    return res.status(500).json({
-      message: "Failed to login",
-      error: errMsg,
-    });
-  }
+export const loginWebAdminManagerOnly = async (req: Request, res: Response) => {
+  return handleLogin(req, res, "web");
 };
 
 export const resetPasswordStaff = async (req: Request, res: Response) => {
@@ -324,8 +414,10 @@ export const getUserQrCode = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllUsersAdmin = async (_req: Request, res: Response) => {
+export const getAllUsersAdmin = async (req: Request, res: Response) => {
   try {
+    const access = await getRequesterAccess(req);
+
     const users = await User.findAll({
       attributes: { exclude: ["password"] },
       include: [
@@ -343,9 +435,16 @@ export const getAllUsersAdmin = async (_req: Request, res: Response) => {
       order: [["createdAt", "DESC"]],
     });
 
+    const visibleUsers =
+      access?.role === "Admin"
+        ? users
+        : users.filter(
+            (user) => user.staff_detail?.departement_id === access?.departementId
+          );
+
     return res.status(200).json({
       message: "Users fetched",
-      data: users,
+      data: visibleUsers,
     });
   } catch (error) {
     return res.status(500).json({
@@ -358,8 +457,10 @@ export const getAllUsersAdmin = async (_req: Request, res: Response) => {
 export const getUserByIdAdmin = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = String(id);
+    const access = await getRequesterAccess(req);
 
-    const user = await User.findByPk(id, {
+    const user = await User.findByPk(userId, {
       attributes: { exclude: ["password"] },
       include: [
         {
@@ -381,6 +482,15 @@ export const getUserByIdAdmin = async (req: Request, res: Response) => {
       });
     }
 
+    if (
+      access?.role !== "Admin" &&
+      user.staff_detail?.departement_id !== access?.departementId
+    ) {
+      return res.status(403).json({
+        message: "You can only access users in your own department",
+      });
+    }
+
     return res.status(200).json({
       message: "User fetched",
       data: user,
@@ -390,5 +500,50 @@ export const getUserByIdAdmin = async (req: Request, res: Response) => {
       message: "Failed to fetch user",
       error,
     });
+  }
+};
+
+export const updateStaffDetailsAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = String(id);
+
+    const access = await getRequesterAccess(req);
+
+    // Find existing staff detail
+    let staff = await StaffDetail.findByPk(userId);
+
+    if (!staff) {
+      // If not exists, create a new staff_detail row (but keep name null)
+      staff = await StaffDetail.create({
+        user_id: userId,
+        name: null,
+        departement_name: null,
+        role: "Staff",
+        departement_id: null,
+      });
+    }
+
+    if (access?.role !== "Admin" && staff.departement_id !== access?.departementId) {
+      return res.status(403).json({ message: "You can only modify staff in your own department" });
+    }
+
+    const { role, departement_id } = req.body as { role?: "Manager" | "Staff"; departement_id?: string };
+
+    const updates: Record<string, any> = {};
+    if (role !== undefined) updates.role = role === "Manager" ? "Manager" : "Staff";
+    if (departement_id !== undefined) {
+      updates.departement_id = departement_id || null;
+      updates.departement_name = await getDepartementDisplayName(departement_id || null);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await staff.update(updates);
+      await staff.reload();
+    }
+
+    return res.status(200).json({ message: "Staff details updated", data: staff });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to update staff details", error });
   }
 };

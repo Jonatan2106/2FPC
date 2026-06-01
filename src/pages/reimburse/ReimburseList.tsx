@@ -12,9 +12,7 @@ import {
   Drawer,
   CircularProgress,
   Alert,
-  Link,
 } from "@mui/material";
-
 import type { Reimburse } from "../../types/reimburse";
 import Navbar from "../../common/Navbar";
 
@@ -69,22 +67,27 @@ const ReimburseList: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ decision: "approved" }),
+        body: JSON.stringify({ approve: true }),
       });
 
-      const data = await response.json();
+      const resJson = await response.json();
 
-      if (response.ok || data.message) {
+      if (response.ok) {
+        const serverData = resJson.data;
         setData((prev) =>
           prev.map((item) =>
             item.reimburse_id === id
-              ? { ...item, approve: true, updatedAt: new Date() }
+              ? {
+                  ...item,
+                  approve: true,
+                  updatedAt: serverData?.updatedAt ? new Date(serverData.updatedAt) : new Date(),
+                }
               : item
           )
         );
         setSelected(null);
       } else {
-        setError(data.message || "Failed to approve reimburse request");
+        setError(resJson.message || "Failed to approve reimburse request");
       }
     } catch (err) {
       setError("An error occurred while approving reimburse request");
@@ -102,22 +105,27 @@ const ReimburseList: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/manager/reimburse-requests/${id}/decision`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ decision: "declined" }),
+        body: JSON.stringify({ approve: false }),
       });
 
-      const data = await response.json();
+      const resJson = await response.json();
 
-      if (response.ok || data.message) {
+      if (response.ok) {
+        const serverData = resJson.data;
         setData((prev) =>
           prev.map((item) =>
             item.reimburse_id === id
-              ? { ...item, approve: false, updatedAt: new Date() }
+              ? {
+                  ...item,
+                  approve: false,
+                  updatedAt: serverData?.updatedAt ? new Date(serverData.updatedAt) : new Date(),
+                }
               : item
           )
         );
         setSelected(null);
       } else {
-        setError(data.message || "Failed to reject reimburse request");
+        setError(resJson.message || "Failed to reject reimburse request");
       }
     } catch (err) {
       setError("An error occurred while rejecting reimburse request");
@@ -125,6 +133,18 @@ const ReimburseList: React.FC = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const formatDate = (value?: Date | string | null) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? "-"
+      : date.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
   };
 
   return (
@@ -159,14 +179,17 @@ const ReimburseList: React.FC = () => {
               sx={{
                 border: "1px solid #e0e0e0",
                 borderRadius: 2,
-                overflow: "hidden",
+                overflow: "auto",
+                maxHeight: "60vh",
                 backgroundColor: "#fff",
+                position: "relative",
               }}
+              className="hide-scrollbar"
             >
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "#fafafa" }}>
-                    <TableCell><b>Staff ID</b></TableCell>
+              <Table stickyHeader>
+                <TableHead sx={{ position: "sticky", top: 0, zIndex: 5 }}>
+                  <TableRow sx={{ backgroundColor: "#fafafa", position: 'relative' }}>
+                    <TableCell><b>Staff</b></TableCell>
                     <TableCell><b>Amount</b></TableCell>
                     <TableCell><b>Evidence</b></TableCell>
                     <TableCell><b>Status</b></TableCell>
@@ -184,9 +207,16 @@ const ReimburseList: React.FC = () => {
                       sx={{ cursor: "pointer" }}
                       onClick={() => setSelected(r)}
                     >
-                      <TableCell>{r.user_id}</TableCell>
+                      <TableCell>
+                        <div>{r.user?.name}</div>
+                        <div style={{ fontSize: 12, color: '#666' }}>{r.user?.departement ?? ''}</div>
+                      </TableCell>
 
-                    <TableCell>-</TableCell>
+                    <TableCell>
+                      {Number.isFinite(Number(r.amount)) && Number(r.amount) > 0
+                        ? Number(r.amount).toLocaleString("id-ID")
+                        : "0"}
+                    </TableCell>
 
                     <TableCell>
                       {r.evidence ? (
@@ -216,51 +246,58 @@ const ReimburseList: React.FC = () => {
                       />
                     </TableCell>
 
-                      <TableCell>
-                        {new Date(r.updatedAt).toLocaleDateString()}
-                      </TableCell>
+                      <TableCell>{formatDate(r.createdAt)}</TableCell>
+
+                      <TableCell>{formatDate(r.updatedAt)}</TableCell>
 
                       <TableCell align="right">
-                        {!r.approve && (
-                          <>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              sx={{ mr: 1 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApprove(r.reimburse_id);
-                              }}
-                              disabled={actionLoading}
-                            >
-                              Approve
-                            </Button>
-
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(r.reimburse_id);
-                              }}
-                              disabled={actionLoading}
-                            >
-                              Reject
-                            </Button>
-                          </>
-                        )}
-
-                        <Button
-                          size="small"
-                          sx={{ ml: 1 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(r);
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            gap: 1,
+                            flexWrap: "wrap",
                           }}
                         >
-                          View
-                        </Button>
+                          {!r.approve && (
+                            <>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleApprove(r.reimburse_id);
+                                }}
+                                disabled={actionLoading}
+                              >
+                                Approve
+                              </Button>
+
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReject(r.reimburse_id);
+                                }}
+                                disabled={actionLoading}
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+
+                          <Button
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelected(r);
+                            }}
+                          >
+                            View
+                          </Button>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -286,9 +323,10 @@ const ReimburseList: React.FC = () => {
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">
-                        User ID
+                        Staff
                       </Typography>
-                      <Typography>{selected.user_id}</Typography>
+                      <Typography>{selected.user?.name ?? selected.user_id}</Typography>
+                      <Typography variant="caption" color="text.secondary">{selected.user?.departement ?? ''}</Typography>
                     </Box>
                     <Box>
                       <Typography variant="body2" color="textSecondary">
