@@ -38,6 +38,12 @@ export class reimburse extends Model {
     declare amount: number;
 
     @Column({
+        type: DataType.TEXT,
+        allowNull: true
+    })
+    declare evidence: string | null;
+
+    @Column({
         type: DataType.DATE,
         allowNull: true
     })

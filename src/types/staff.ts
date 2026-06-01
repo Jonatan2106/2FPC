@@ -2,12 +2,16 @@ import type { User } from "./user";
 
 export type Staff = {
   user: User;
-  QR: string;
-  hire_date: Date;
-  role: 'STAFF' | 'MANAGER';
-  department_id: string;
-  roleBehavior: RoleBehavior;
-  manager_id: string | null;
+  name?: string | null;
+  departement_name?: string | null;
+  hire_date?: Date | string | null;
+  role: "Staff" | "Manager";
+  departement_id?: string | null;
+  departement_data?: {
+    company_name: string;
+  };
+  roleBehavior?: RoleBehavior;
+  manager_id?: string | null;
 };
 
 export interface RoleBehavior {

@@ -19,46 +19,6 @@ export default {
           salary: 15000000,
           createdAt: new Date(),
           updatedAt: new Date()
-        },
-        {
-          user_id: '550e8400-e29b-41d4-a716-446655440002',
-          name: 'Admin Finance',
-          email: 'finance.admin@company.local',
-          password: hashedPassword,
-          type: 'Admin',
-          salary: 10000000,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          user_id: '550e8400-e29b-41d4-a716-446655440003',
-          name: 'Admin HR',
-          email: 'hr.admin@company.local',
-          password: hashedPassword,
-          type: 'Admin',
-          salary: 10000000,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          user_id: '550e8400-e29b-41d4-a716-446655440004',
-          name: 'Admin Operations',
-          email: 'ops.admin@company.local',
-          password: hashedPassword,
-          type: 'Admin',
-          salary: 9000000,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          user_id: '550e8400-e29b-41d4-a716-446655440005',
-          name: 'Admin IT Support',
-          email: 'it.admin@company.local',
-          password: hashedPassword,
-          type: 'Admin',
-          salary: 11000000,
-          createdAt: new Date(),
-          updatedAt: new Date()
         }
       ];
 

@@ -32,12 +32,14 @@ const Navbar: React.FC = () => {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        p: 2,
+        px: 3,
         position: "fixed",
         top: 0,
         left: 0,
         zIndex: 1000,
-        backgroundColor: "transparent",
+        backgroundColor: "#ffffff",
+        height: 64,
+        boxShadow: '0 1px 4px rgba(16,24,40,0.06)',
         boxSizing: "border-box",
       }}
     >

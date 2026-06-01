@@ -16,6 +16,10 @@ export default {
       amount: { 
         type: Sequelize.DECIMAL(10, 2) 
       },
+      evidence: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       approvedAt: { 
         type: Sequelize.DATE
       },

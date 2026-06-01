@@ -28,7 +28,13 @@ export class staff_detail extends Model {
     type: DataType.STRING,
     allowNull: true
   })
-  declare QR: string;
+  declare name: string | null;
+
+  @Column({
+    type: DataType.STRING,
+    allowNull: true
+  })
+  declare departement_name: string | null;
 
   @Column({
     type: DataType.ENUM("Manager", "Staff"),
@@ -40,14 +46,14 @@ export class staff_detail extends Model {
     type: DataType.DATE,
     allowNull: true
   })
-  declare hire_date: Date;
+  declare hire_date: Date | null;
 
   @ForeignKey(() => departement)
   @Column({
     type: DataType.UUID,
     allowNull: true
   })
-  declare departement_id: string;
+  declare departement_id: string | null;
 
   @BelongsTo(() => user, {
     foreignKey: "user_id",

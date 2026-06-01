@@ -18,14 +18,22 @@ export const createUserManagementTreeAdmin = async (req: Request, res: Response)
 
     if (manager_user_id) {
       await StaffDetail.update(
-        { departement_id: newDepartement.departement_id, role: "Manager" },
+        {
+          departement_id: newDepartement.departement_id,
+          departement_name: newDepartement.company_name,
+          role: "Manager",
+        },
         { where: { user_id: manager_user_id } }
       );
     }
 
     if (Array.isArray(staff_user_ids) && staff_user_ids.length > 0) {
       await StaffDetail.update(
-        { departement_id: newDepartement.departement_id, role: "Staff" },
+        {
+          departement_id: newDepartement.departement_id,
+          departement_name: newDepartement.company_name,
+          role: "Staff",
+        },
         { where: { user_id: staff_user_ids } }
       );
     }
@@ -55,18 +63,32 @@ export const updateUserManagementTreeAdmin = async (req: Request, res: Response)
 
     if (departement_name) {
       await targetDepartement.update({ company_name: departement_name });
+      await StaffDetail.update(
+        { departement_name },
+        { where: { departement_id: treeId } }
+      );
     }
+
+    const currentDepartementName = targetDepartement.company_name;
 
     if (manager_user_id) {
       await StaffDetail.update(
-        { departement_id: treeId, role: "Manager" },
+        {
+          departement_id: treeId,
+          departement_name: currentDepartementName,
+          role: "Manager",
+        },
         { where: { user_id: manager_user_id } }
       );
     }
 
     if (Array.isArray(staff_user_ids)) {
       await StaffDetail.update(
-        { departement_id: treeId, role: "Staff" },
+        {
+          departement_id: treeId,
+          departement_name: currentDepartementName,
+          role: "Staff",
+        },
         { where: { user_id: staff_user_ids } }
       );
     }

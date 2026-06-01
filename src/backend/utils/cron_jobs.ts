@@ -15,11 +15,13 @@ export const initializeCronJobs = () => {
     } catch (error) {
       console.error("[Cron Job] Failed to reset daily QR & device lock:", error);
     }
+  }, {
+    timezone: "Asia/Jakarta",
   });
 
   // Test job - run at startup to verify cron is working
   console.log("[Cron Jobs] Initialized:");
-  console.log("  - Daily reset at 00:00 (UTC)");
+  console.log("  - Daily reset at 00:00 (Asia/Jakarta)");
 
   return dailyResetJob;
 };

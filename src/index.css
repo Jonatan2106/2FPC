@@ -2,6 +2,8 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  /* Comfortable base font size */
+  font-size: 16px;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -29,13 +31,13 @@ html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   min-height: 100vh;
   background-color: #ffffff;
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2rem;
   line-height: 1.1;
 }
 
@@ -69,4 +71,71 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Sticky table headers so column titles remain visible when scrolling */
+table thead th,
+table thead td,
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: #ffffff;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+/* Add subtle divider/shadow to sticky header to separate from content */
+table thead th::after,
+table thead td::after,
+.sticky-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: rgba(0,0,0,0.06);
+}
+
+/* Hide scrollbars visually but keep scroll functionality */
+/* Page-level: disable page scrolling and hide scrollbar */
+html, body {
+  overflow: hidden; /* prevent page-level scrolling */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Utility class for hiding scrollbars on scrollable containers (e.g., table wrappers) */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Limit table container to show max 6 rows (approx). If content exceeds, container scrolls. */
+.table-limited {
+  max-height: 488px; /* approx: 6 * 72px row + header */
+  overflow: auto;
+}
+.table-limited.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Variant to limit table to ~5 rows (used on Leave page) */
+.table-limited-5 {
+  max-height: 416px; /* approx: 5 * 72px row + header */
+  overflow: auto;
+}
+.table-limited-5.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }

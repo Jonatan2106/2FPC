@@ -10,8 +10,13 @@ export default {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      QR: { 
-        type: Sequelize.STRING 
+      name: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      departement_name: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
       role: { 
         type: Sequelize.ENUM('Manager', 'Staff'), 

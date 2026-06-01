@@ -26,10 +26,6 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
   return res.status(500).json({ message: "Internal server error" });
 });
 
-app.use(cors({
-  origin: 'http://localhost:8080', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
-}));
+// CORS is configured above using `process.env.CORS_ORIGIN`.
 
 export default app;

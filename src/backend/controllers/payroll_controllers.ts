@@ -5,9 +5,74 @@ import { penalty as Penalty } from "../../../models/penalty";
 import { reimburse as Reimburse } from "../../../models/reimburse";
 import { leave_management as LeaveManagement } from "../../../models/leave_management";
 
-const extractReimburseAmount = (item: { amount?: number | null; evidence?: string | null }) => {
-  if (typeof item.amount === "number" && Number.isFinite(item.amount) && item.amount > 0) {
-    return item.amount;
+const MONTHLY_CUTOFF_DAYS = 7;
+
+const toValidDate = (value: unknown): Date | null => {
+  if (!value) return null;
+
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const isWithinRange = (date: Date | null, start: Date, end: Date): boolean => {
+  if (!date) return false;
+  return date >= start && date <= end;
+};
+
+const getValueFromModel = (item: { get: (key: string) => unknown }, keys: string[]): Date | null => {
+  for (const key of keys) {
+    const value = item.get(key);
+    const parsed = toValidDate(value);
+    if (parsed) return parsed;
+  }
+  return null;
+};
+
+const getPayrollPeriod = (reference: Date, cutoffDays: number) => {
+  const year = reference.getFullYear();
+  const month = reference.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // If now is within H-7 before month end, move calculation window to next month.
+  const cutoffStartDay = Math.max(1, daysInMonth - (cutoffDays - 1));
+  const cutoffStart = new Date(year, month, cutoffStartDay, 0, 0, 0, 0);
+  const useNextMonth = reference >= cutoffStart;
+
+  const targetMonthDate = useNextMonth
+    ? new Date(year, month + 1, 1)
+    : new Date(year, month, 1);
+
+  const start = new Date(
+    targetMonthDate.getFullYear(),
+    targetMonthDate.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+  const end = new Date(
+    targetMonthDate.getFullYear(),
+    targetMonthDate.getMonth() + 1,
+    0,
+    23,
+    59,
+    59,
+    999
+  );
+
+  return {
+    start,
+    end,
+    label: start.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
+  };
+};
+
+const extractReimburseAmount = (item: { amount?: number | string | null; evidence?: string | null }) => {
+  // Handle DECIMAL values returned as strings by Sequelize
+  if (item.amount !== undefined && item.amount !== null) {
+    const num = typeof item.amount === "number" ? item.amount : Number(String(item.amount).replace(/,/g, ""));
+    if (Number.isFinite(num) && num > 0) return num;
   }
 
   const evidenceText = item.evidence ?? "";
@@ -22,11 +87,18 @@ const extractReimburseAmount = (item: { amount?: number | null; evidence?: strin
 
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
-    const { name } = req.body;
+    const { name, pay_date } = req.body as { name?: string; pay_date?: string };
 
     if (!name) {
       return res.status(400).json({ message: "name is required" });
     }
+
+    const referenceDate = pay_date ? toValidDate(pay_date) : new Date();
+    if (!referenceDate) {
+      return res.status(400).json({ message: "pay_date is invalid" });
+    }
+
+    const period = getPayrollPeriod(referenceDate, MONTHLY_CUTOFF_DAYS);
 
     const targetUser = await User.findOne({ where: { name } });
     if (!targetUser) {
@@ -36,17 +108,40 @@ export const generatePayroll = async (req: Request, res: Response) => {
     const user_id = targetUser.user_id;
     const baseSalary = targetUser.salary ?? 0;
 
-    // Calculate total penalty
+    // Calculate monthly penalty total
     const penalties = await Penalty.findAll({ where: { user_id } });
-    const totalPenalty = penalties.reduce((acc, item) => acc + (item.amount ?? 0), 0);
+    const totalPenalty = penalties
+      .filter((item) =>
+        isWithinRange(
+          getValueFromModel(item, ["penaltyAt", "createdAt"]),
+          period.start,
+          period.end
+        )
+      )
+      .reduce((acc, item) => acc + (item.amount ?? 0), 0);
 
-    // Calculate total reimburse (only approved)
+    // Calculate monthly reimburse total (only approved)
     const reimburses = await Reimburse.findAll({ where: { user_id, approve: true } });
-    const totalReimburse = reimburses.reduce((acc, item) => acc + extractReimburseAmount(item), 0);
+    const totalReimburse = reimburses
+      .filter((item) =>
+        isWithinRange(
+          getValueFromModel(item, ["approvedAt", "updatedAt", "createdAt"]),
+          period.start,
+          period.end
+        )
+      )
+      .reduce((acc, item) => acc + extractReimburseAmount(item), 0);
 
-    // Calculate total leave days (approved leaves)
-    const leaveCount = await LeaveManagement.count({ where: { user_id, cuti: true } });
-    const leaveDays = leaveCount;
+    // Calculate monthly leave days (approved leaves)
+    const leaves = await LeaveManagement.findAll({ where: { user_id, cuti: true } });
+    const leaveDays = leaves.filter((item) =>
+      isWithinRange(
+        getValueFromModel(item, ["approvedAt", "updatedAt", "createdAt"]),
+        period.start,
+        period.end
+      )
+    ).length;
+
     const leaveDeduction = leaveDays * 50000;
 
     // Calculate final salary
@@ -71,6 +166,10 @@ export const generatePayroll = async (req: Request, res: Response) => {
         leave_days: leaveDays,
         leave_deduction: leaveDeduction,
         final_salary: finalSalary,
+        payroll_period_start: period.start,
+        payroll_period_end: period.end,
+        payroll_period_label: period.label,
+        payroll_cutoff_days: MONTHLY_CUTOFF_DAYS,
       },
     });
   } catch (error) {
