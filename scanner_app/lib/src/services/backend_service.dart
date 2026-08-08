@@ -11,7 +11,7 @@ class BackendService {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080/api',
+    defaultValue: 'http://10.109.188.126:8080/api', // Ganti dengan IP laptopmu jika sudah berubah
   );
 
   static String get baseUrl => _baseUrl;
@@ -51,9 +51,12 @@ class BackendService {
     required String password,
   }) async {
     final deviceId = await DeviceIdService.getOrCreateDeviceId();
-    final result = await _getJson(
+    print('[Login] Device ID: $deviceId');
+
+    // Sudah diubah menjadi _postJson dan menggunakan body
+    final result = await _postJson(
       path: '/mobile/auth/login',
-      query: {
+      body: {
         'username': username,
         'password': password,
         'device_id': deviceId,
@@ -109,7 +112,8 @@ class BackendService {
         .get(
           uri,
           headers: {
-            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Connection': 'close', // Mencegah TimeoutException
             if (token != null) 'Authorization': 'Bearer $token',
           },
         )
@@ -129,6 +133,8 @@ class BackendService {
           uri,
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Connection': 'close', // Mencegah TimeoutException
             if (token != null) 'Authorization': 'Bearer $token',
           },
           body: jsonEncode(body),

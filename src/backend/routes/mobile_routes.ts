@@ -7,7 +7,7 @@ import { controllerWrapper } from "../utils/controllerWrapper";
 const MobileRouter = express.Router();
 
 // Mobile app is scoped for attendance flow only.
-MobileRouter.get("/auth/login", controllerWrapper(loginStaffOrManager));
+MobileRouter.post("/auth/login", controllerWrapper(loginStaffOrManager));
 MobileRouter.get("/attendance/qr", authenticateJWT, controllerWrapper(generateAttendanceQr));
 MobileRouter.post("/attendance/clock-in/qr-scan", authenticateJWT, controllerWrapper(clockInByQrScan));
 MobileRouter.delete("/attendance/:id/clock-out", authenticateJWT, controllerWrapper(clockOutAttendanceStaff));

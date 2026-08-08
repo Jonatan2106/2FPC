@@ -7,6 +7,7 @@ class AppUser {
     required this.departmentId,
     required this.departmentName,
     required this.token,
+    required this.role,
   });
 
   final String id;
@@ -14,6 +15,7 @@ class AppUser {
   final String departmentId;
   final String departmentName;
   final String token;
+  final String role;
 }
 
 class Department {

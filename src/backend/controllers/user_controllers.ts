@@ -126,21 +126,25 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
     const qrData = await generateUserQrCode(existingUser.user_id);
     const qrImage = await generateQrImage(qrData);
 
-    if (channel === "mobile" && (effectiveRole === "Manager" || effectiveRole === "Admin")) {
+    // INI KODE BARU YANG HARUS KAMU PASANG DI NODE.JS
+    if (channel === "mobile") {
+
+      // LAPIS 1: Akun A hanya boleh login di HP A
       if (existingUser.device_id && existingUser.device_id !== deviceId) {
         return res.status(403).json({
-          message: `${effectiveRole} hanya boleh login di satu device aplikasi. Gunakan device yang sama atau reset sesi terlebih dahulu.`,
+          message: `Akun ini hanya boleh login di satu device aplikasi. Gunakan device yang sama atau lapor ke Admin untuk reset sesi.`,
           data: {
             lockedDeviceId: existingUser.device_id,
           },
         });
       }
 
+      // LAPIS 2: HP A tidak bisa dipakai oleh Akun B
       if (deviceId) {
         const lockStatus = await checkDeviceLock(deviceId, existingUser.user_id);
         if (lockStatus.isLocked) {
           return res.status(403).json({
-            message: `Device ini sudah dipakai ${effectiveRole.toLowerCase()} lain (${lockStatus.lockedUsername}) hari ini. Coba lagi besok.`,
+            message: `Device ini sudah terdaftar untuk pengguna lain (${lockStatus.lockedUsername}). Satu device hanya untuk satu akun.`,
             data: {
               lockedUserId: lockStatus.lockedUserId,
               lockedUsername: lockStatus.lockedUsername,
@@ -149,6 +153,7 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
         }
       }
 
+      // Simpan device ID jika lolos
       await saveUserQrAndDevice(existingUser.user_id, qrData, deviceId);
     }
 
@@ -315,7 +320,7 @@ export const loginWebAdminManagerOnly = async (req: Request, res: Response) => {
 export const resetPasswordStaff = async (req: Request, res: Response) => {
   try {
     // Ambil email dari URL params (karena di route pakai :email)
-    const { email } = req.params; 
+    const { email } = req.params;
     const { newPassword } = req.body;
 
     if (!newPassword) {
@@ -323,7 +328,7 @@ export const resetPasswordStaff = async (req: Request, res: Response) => {
     }
 
     const existingUser = await User.findOne({ where: { email: email } });
-    
+
     if (!existingUser) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -439,8 +444,8 @@ export const getAllUsersAdmin = async (req: Request, res: Response) => {
       access?.role === "Admin"
         ? users
         : users.filter(
-            (user) => user.staff_detail?.departement_id === access?.departementId
-          );
+          (user) => user.staff_detail?.departement_id === access?.departementId
+        );
 
     return res.status(200).json({
       message: "Users fetched",

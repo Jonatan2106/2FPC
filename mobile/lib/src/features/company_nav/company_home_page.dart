@@ -45,7 +45,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
             final monthDate = DateTime(_focusedDay.year, index + 1);
             return SimpleDialogOption(
               onPressed: () {
-                // Tutup dialog dulu baru update state untuk mencegah error PageController
                 Navigator.pop(context);
                 setState(() {
                   _focusedDay = DateTime(_focusedDay.year, index + 1, 1);
@@ -451,26 +450,67 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Dropdown Departemen
-                          DropdownButtonFormField<String>(
-                            value: _selectedDepartmentId,
-                            decoration: const InputDecoration(
-                              labelText: 'Pilih Departemen',
-                            ),
-                            items: _departments
-                                .map(
-                                  (dept) => DropdownMenuItem(
-                                    value: dept.id,
-                                    child: Text(dept.name),
+                          // --- KONTROL HAK AKSES DEPARTEMEN ---
+                          if (widget.user.role == 'Admin')
+                            DropdownButtonFormField<String>(
+                              value: _selectedDepartmentId,
+                              decoration: const InputDecoration(
+                                labelText: 'Pilih Departemen',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: _departments
+                                  .map(
+                                    (dept) => DropdownMenuItem(
+                                      value: dept.id,
+                                      child: Text(dept.name),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) async {
+                                if (value == null) return;
+                                setState(() => _selectedDepartmentId = value);
+                                await _loadLeavesForMonth(_focusedDay);
+                              },
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.business, color: Colors.blue),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Departemen Anda',
+                                          style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                        ),
+                                        Text(
+                                          widget.user.departmentName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                )
-                                .toList(),
-                            onChanged: (value) async {
-                              if (value == null) return;
-                              setState(() => _selectedDepartmentId = value);
-                              await _loadLeavesForMonth(_focusedDay);
-                            },
-                          ),
+                                  Chip(
+                                    label: Text(widget.user.role),
+                                    backgroundColor: widget.user.role == 'Manager'
+                                        ? Colors.amber.shade100
+                                        : Colors.green.shade100,
+                                  ),
+                                ],
+                              ),
+                            ),
 
                           const SizedBox(height: 20),
 
@@ -478,7 +518,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Panah Kiri
                               IconButton(
                                 icon: const Icon(Icons.chevron_left),
                                 onPressed: () {
@@ -494,7 +533,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
 
                               _buildMonthYearText(),
 
-                              // Panah Kanan
                               IconButton(
                                 icon: const Icon(Icons.chevron_right),
                                 onPressed: () {
@@ -508,14 +546,13 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                                 },
                               ),
 
-                              // Dropdown Menu (Hanya 2 Opsi)
                               _buildModeDropdown(),
                             ],
                           ),
                           const SizedBox(height: 8),
 
                           TableCalendar<LeaveEntry>(
-                            headerVisible: false, // Matikan header default
+                            headerVisible: false,
                             firstDay: DateTime.utc(2022, 1, 1),
                             lastDay: DateTime.utc(2035, 12, 31),
                             focusedDay: _focusedDay,
@@ -570,7 +607,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     );
   }
 
-  // Widget Dropdown diringkas menjadi 2 opsi: Lihat Kehadiran & Pengajuan
   Widget _buildModeDropdown() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -609,7 +645,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     if (_deptMode == DeptCalendarMode.viewAttendance) {
       _openAttendancePopup(selectedDay);
     } else {
-      // Jika mode adalah requestLeave (Pengajuan), buka popup pilihan pengajuan
       _openRequestPopup(selectedDay);
     }
   }

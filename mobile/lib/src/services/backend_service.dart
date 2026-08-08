@@ -12,7 +12,7 @@ class BackendService {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8080/api',
+    defaultValue: 'http://10.109.188.126:8080/api',
   );
 
   Future<AppUser> login({
@@ -23,9 +23,10 @@ class BackendService {
       final deviceId = await DeviceIdService.getOrCreateDeviceId();
       print('[Login] Device ID: $deviceId');
 
-      final result = await _getJson(
+      // Gunakan _postJson, kirim sebagai body
+      final result = await _postJson(
         path: '/mobile/auth/login',
-        query: {
+        body: {
           'username': username,
           'password': password,
           'device_id': deviceId,
@@ -47,6 +48,7 @@ class BackendService {
         departmentId: 'unknown',
         departmentName: 'Departemen',
         token: token,
+        role: (data['role'] ?? 'Staff').toString(),
       );
     } catch (e) {
       print('[Login Error] $e');

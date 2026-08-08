@@ -30,7 +30,7 @@ npm run backend:start
 4. Cari IP laptop (contoh `192.168.1.10`) lalu jalankan app dengan base URL backend:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://192.168.1.10:8080/api
+flutter run --dart-define=API_BASE_URL=http://192.168.100.6:8080/api
 ```
 
 Alternatif cepat (otomatis deteksi IP lokal di Windows PowerShell):
@@ -47,7 +47,7 @@ Atau isi manual jika ingin spesifik:
 
 Catatan:
 - Jangan pakai `localhost` atau `127.0.0.1` untuk HP fisik.
-- Default app saat tanpa `--dart-define` adalah `http://10.0.2.2:8080/api` (khusus emulator Android).
+- Default app saat tanpa `--dart-define` adalah `http://192.168.67.1:8080/api` 
 - Jika backend lokal memakai HTTP, Android sudah diizinkan lewat `usesCleartextTraffic=true`.
 
 ## Build APK Release
