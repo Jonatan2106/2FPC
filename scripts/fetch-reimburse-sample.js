@@ -3,7 +3,7 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const API_BASE = process.env.VITE_API_BASE_URL || 'http://localhost:8080/api/web';
+const API_BASE = process.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 async function run() {
   try {
