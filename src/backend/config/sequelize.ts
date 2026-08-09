@@ -10,21 +10,21 @@ import { staff_detail } from "../../../models/staff_details";
 import { user } from "../../../models/user";
 
 const databaseUrl = process.env.DATABASE_URL;
+const isProduction = process.env.NODE_ENV === "production" || process.env.DATABASE_SSL === "true";
 
 export const sequelize = databaseUrl
   ? new Sequelize(databaseUrl, {
       dialect: "postgres",
       logging: false,
       models: [attendance, departement, leave_management, payroll, penalty, reimburse, staff_detail, user],
-      dialectOptions:
-        process.env.DATABASE_SSL === "true"
-          ? {
-              ssl: {
-                require: true,
-                rejectUnauthorized: false,
-              },
-            }
-          : undefined,
+      dialectOptions: isProduction
+        ? {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false, // Memastikan koneksi SSL cloud diterima
+            },
+          }
+        : undefined,
     })
   : new Sequelize({
       database: process.env.DATABASE_NAME || "postgres",
