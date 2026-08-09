@@ -7,8 +7,6 @@ const clearExpiredSessions = async () => {
   try {
     console.log("🧹 [Startup] Mengecek sesi dan device ID dari hari kemarin...");
     
-    // CURRENT_DATE di PostgreSQL otomatis mengambil tanggal hari ini jam 00:00:00
-    // Query ini mengosongkan 5 field tersebut untuk user yang login-nya sebelum hari ini
     const query = `
       UPDATE users 
       SET qr_code = NULL, 
@@ -21,7 +19,6 @@ const clearExpiredSessions = async () => {
     
     const [_, metadata] = await sequelize.query(query);
     
-    // Menghitung berapa baris user yang berhasil di-reset
     const updatedCount = (metadata as any)?.rowCount ?? 0;
     
     if (updatedCount > 0) {
@@ -45,7 +42,12 @@ const startServer = async () => {
     console.log("DB NAME:", process.env.DATABASE_NAME);
     console.log("DB HOST:", process.env.DATABASE_HOST);
 
-    // EKSEKUSI PEMBERSIHAN SETELAH DATABASE TERHUBUNG
+    // 🔴 TAMBAHKAN BARIS INI: Sinkronisasi tabel ke Supabase otomatis
+    console.log("🔄 Sinkronisasi struktur tabel ke database...");
+    await sequelize.sync({ alter: true });
+    console.log("✅ Semua tabel berhasil disinkronkan.");
+
+    // EKSEKUSI PEMBERSIHAN SETELAH DATABASE & TABEL SIAP
     await clearExpiredSessions();
 
   } catch (error) {
@@ -59,7 +61,7 @@ const startServer = async () => {
     console.log(`📱 Mobile app can connect to http://10.109.188.126:${port}/api`);
   });
 
-  // Initialize cron jobs for daily reset (tetap berjalan jika backend tidak dimatikan)
+  // Initialize cron jobs for daily reset
   initializeCronJobs();
 
   // Handle server errors
