@@ -25,7 +25,8 @@ const CreateUser: React.FC = () => {
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
 
-  const API_BASE_URL = "http://localhost:8080/api/web";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+  const API_BASE_URL = `${BASE_URL}/api/web`;
 
   // Get auth token from localStorage
   const getToken = () => localStorage.getItem("authToken");

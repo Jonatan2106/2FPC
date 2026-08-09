@@ -3,6 +3,7 @@ import { Box, Typography, TextField, Button, Link, Alert } from "@mui/material";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 const ResetPassword: React.FC = () => {
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const email = searchParams.get("email") || ""; // Menangkap email dari URL
@@ -22,7 +23,7 @@ const ResetPassword: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/api/web/auth/users/${encodeURIComponent(email)}/reset-password`, {
+      const response = await fetch(`${BASE_URL}/api/web/auth/users/${encodeURIComponent(email)}/reset-password`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ 

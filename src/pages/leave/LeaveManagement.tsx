@@ -24,7 +24,8 @@ const LeaveManagement: React.FC = () => {
   const [error, setError] = React.useState("");
   const [actionLoading, setActionLoading] = React.useState(false);
 
-  const API_BASE_URL = "http://localhost:8080/api/web";
+  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+  const API_BASE_URL = `${BASE_URL}/api/web`;
 
   const getHeaders = () => ({
     "Content-Type": "application/json",
