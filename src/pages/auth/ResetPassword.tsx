@@ -23,7 +23,7 @@ const ResetPassword: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/web/auth/users/${encodeURIComponent(email)}/reset-password`, {
+      const response = await fetch(`${BASE_URL}/api/auth/users/${encodeURIComponent(email)}/reset-password`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ 

@@ -24,7 +24,7 @@ export const logoutWeb = async () => {
 
   try {
     if (token) {
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(`${API_URL}/api/web/auth/logout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
