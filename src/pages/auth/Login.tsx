@@ -11,8 +11,10 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
-  const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-  const API_BASE_URL = `${BASE_URL}/api/web`;
+  // Format dan bersihkan URL agar tidak pernah menjadi URL relatif Netlify
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || "https://twofpc.onrender.com").trim();
+  const cleanBaseUrl = envUrl.startsWith("http") ? envUrl : `https://${envUrl.replace(/^\/+/, "")}`;
+  const API_BASE_URL = `${cleanBaseUrl.replace(/\/$/, "")}/api/web`;
 
   const handleLogin = async () => {
     if (!username || !password) {
