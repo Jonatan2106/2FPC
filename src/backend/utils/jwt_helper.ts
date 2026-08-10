@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.JWT_SECRET || '123';
+const SECRET_KEY = process.env.JWT_SECRET || 'absensi_perusahaan_anda_secret_key';
 
 export type AuthTokenPayload = {
   userId: string;
@@ -12,7 +12,7 @@ export type AuthTokenPayload = {
 // Generate a JWT token
 export const generateToken = (
   payload: AuthTokenPayload,
-  expiresIn: jwt.SignOptions['expiresIn'] = '30d'
+  expiresIn: jwt.SignOptions['expiresIn'] = (process.env.JWT_EXPIRES_IN as jwt.SignOptions['expiresIn']) || '1d'
 ): string => {
   return jwt.sign(payload, SECRET_KEY, { expiresIn });
 };

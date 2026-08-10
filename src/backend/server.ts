@@ -44,7 +44,6 @@ const startServer = async () => {
 
     // 🔴 TAMBAHKAN BARIS INI: Sinkronisasi tabel ke Supabase otomatis
     console.log("🔄 Sinkronisasi struktur tabel ke database...");
-    await sequelize.sync({ alter: true });
     console.log("✅ Semua tabel berhasil disinkronkan.");
 
     // EKSEKUSI PEMBERSIHAN SETELAH DATABASE & TABEL SIAP
