@@ -19,10 +19,12 @@ class CompanyHomePage extends StatefulWidget {
 
 class _CompanyHomePageState extends State<CompanyHomePage> {
   bool _loading = true;
+  bool _payrollLoading = false;
   String _qrData = '';
   List<Department> _departments = [];
   List<LeaveEntry> _leaves = [];
   List<AttendanceEntry> _attendanceHistory = [];
+  PayrollSummaryEntry? _payrollSummary;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   String? _selectedDepartmentId;
@@ -54,8 +56,12 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
               child: Text(
                 DateFormat('MMMM').format(monthDate),
                 style: TextStyle(
-                  fontWeight: index + 1 == _focusedDay.month ? FontWeight.bold : FontWeight.normal,
-                  color: index + 1 == _focusedDay.month ? Colors.blue : Colors.black,
+                  fontWeight: index + 1 == _focusedDay.month
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: index + 1 == _focusedDay.month
+                      ? Colors.blue
+                      : Colors.black,
                 ),
               ),
             );
@@ -127,6 +133,8 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         _selectedDepartmentId = selectedDepartment;
         _leaves = leaves;
       });
+
+      await _loadPayrollForDay(_selectedDay);
     } catch (error) {
       if (!mounted) {
         return;
@@ -138,6 +146,38 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
       if (mounted) {
         setState(() {
           _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadPayrollForDay(DateTime day) async {
+    setState(() {
+      _payrollLoading = true;
+    });
+
+    try {
+      final summary = await widget.service.getPayrollSummary(
+        user: widget.user,
+        referenceDate: day,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _payrollSummary = summary;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memuat payroll: $error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _payrollLoading = false;
         });
       }
     }
@@ -252,6 +292,88 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
           ),
         );
       },
+    );
+  }
+
+  String _formatPayrollRange(PayrollSummaryEntry? summary) {
+    if (summary == null ||
+        summary.periodStart == null ||
+        summary.periodEnd == null) {
+      return '-';
+    }
+
+    return '${DateFormat('dd MMM yyyy').format(summary.periodStart!)} - ${DateFormat('dd MMM yyyy').format(summary.periodEnd!)}';
+  }
+
+  Widget _buildPayrollCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Payroll Bulan Ini',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tanggal terpilih: ${DateFormat('dd MMM yyyy').format(_selectedDay)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            if (_payrollLoading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_payrollSummary == null)
+              const Text('Belum ada data payroll untuk tanggal ini.')
+            else ...[
+              Row(
+                children: [
+                  Chip(
+                    label: Text(
+                      _payrollSummary!.hasPayroll
+                          ? 'Payroll sudah diberikan'
+                          : 'Belum ada payroll',
+                    ),
+                    backgroundColor: _payrollSummary!.hasPayroll
+                        ? Colors.green.shade100
+                        : Colors.grey.shade200,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Periode: ${_formatPayrollRange(_payrollSummary)}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Total gaji: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(_payrollSummary!.totalIncome)}',
+              ),
+              const SizedBox(height: 12),
+              if (_payrollSummary!.breakdown.isNotEmpty)
+                ..._payrollSummary!.breakdown.map(
+                  (item) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(item.label),
+                    subtitle: Text(item.note ?? item.source),
+                    trailing: Text(
+                      '${item.type == 'deduction' ? '-' : '+'}${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(item.amount)}',
+                    ),
+                  ),
+                )
+              else
+                const Text('Tidak ada rincian payroll untuk periode ini.'),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
@@ -438,6 +560,9 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                   _buildQrCard(),
                   const SizedBox(height: 16),
 
+                  _buildPayrollCard(),
+                  const SizedBox(height: 16),
+
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -453,7 +578,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                           // --- KONTROL HAK AKSES DEPARTEMEN ---
                           if (widget.user.role == 'Admin')
                             DropdownButtonFormField<String>(
-                              value: _selectedDepartmentId,
+                              initialValue: _selectedDepartmentId,
                               decoration: const InputDecoration(
                                 labelText: 'Pilih Departemen',
                                 border: OutlineInputBorder(),
@@ -474,7 +599,10 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                             )
                           else
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.blue.shade50,
                                 borderRadius: BorderRadius.circular(8),
@@ -482,15 +610,22 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.business, color: Colors.blue),
+                                  const Icon(
+                                    Icons.business,
+                                    color: Colors.blue,
+                                  ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Departemen Anda',
-                                          style: TextStyle(fontSize: 12, color: Colors.blueGrey),
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blueGrey,
+                                          ),
                                         ),
                                         Text(
                                           widget.user.departmentName,
@@ -504,7 +639,8 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                                   ),
                                   Chip(
                                     label: Text(widget.user.role),
-                                    backgroundColor: widget.user.role == 'Manager'
+                                    backgroundColor:
+                                        widget.user.role == 'Manager'
                                         ? Colors.amber.shade100
                                         : Colors.green.shade100,
                                   ),
@@ -571,6 +707,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                                 _selectedDay = selectedDay;
                                 _focusedDay = focusedDay;
                               });
+                              _loadPayrollForDay(selectedDay);
                               _handleDaySelection(selectedDay);
                             },
                           ),
@@ -592,15 +729,26 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
           onTap: _showMonthPicker,
           child: Text(
             DateFormat('MMMM').format(_focusedDay),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
-        const Text(" ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Text(
+          " ",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         InkWell(
           onTap: _showYearPicker,
           child: Text(
             DateFormat('yyyy').format(_focusedDay),
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, decoration: TextDecoration.underline),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ],

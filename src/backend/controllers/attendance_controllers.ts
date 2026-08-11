@@ -1,11 +1,13 @@
 import type { Request, Response } from "express";
 import QRCode from "qrcode";
 import { attendance as Attendance } from "../../../models/attendance";
+import { penalty as Penalty } from "../../../models/penalty";
 import { user as User } from "../../../models/user";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { departement as Departement } from "../../../models/departements";
 import { Op } from "sequelize";
 import { generateAttendanceQrToken, verifyToken } from "../utils/jwt_helper";
+import { calculateLatePenalty } from "../utils/payroll_helpers";
 
 const getRequesterAttendanceScope = async (req: Request): Promise<string[] | null> => {
   const requesterId = req.headers["x-user-id"] as string | undefined;
@@ -58,13 +60,37 @@ export const clockInAttendanceStaff = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "user_id is required" });
     }
 
+    const clockInAt = new Date();
     const newAttendance = await Attendance.create({
       user_id,
-      clock_in: new Date(),
+      clock_in: clockInAt,
       clock_out: null,
     });
 
-    return res.status(201).json({ message: "Clock in success", data: newAttendance });
+    const latePenalty = calculateLatePenalty(clockInAt);
+    if (latePenalty.isLate) {
+      await Penalty.create({
+        user_id,
+        category: "late",
+        note: `Terlambat ${latePenalty.lateHours} jam (${latePenalty.minutesLate} menit) saat clock in.`,
+        amount: latePenalty.amount,
+        penaltyAt: clockInAt,
+      });
+    }
+
+    return res.status(201).json({
+      message: "Clock in success",
+      data: {
+        attendance: newAttendance,
+        late_penalty: latePenalty.isLate
+          ? {
+              amount: latePenalty.amount,
+              minutes_late: latePenalty.minutesLate,
+              hours_late: latePenalty.lateHours,
+            }
+          : null,
+      },
+    });
   } catch (error) {
     return res.status(500).json({ message: "Failed to clock in", error });
   }
@@ -239,14 +265,38 @@ export const clockInByQrScan = async (req: Request, res: Response) => {
       return res.status(409).json({ message: "User already clocked in and not clocked out yet" });
     }
 
+    const clockInAt = new Date();
     const attendanceData = await Attendance.create({
       user_id: userId,
-      clock_in: new Date(),
+      clock_in: clockInAt,
       clock_out: null,
     });
 
+    const latePenalty = calculateLatePenalty(clockInAt);
+    if (latePenalty.isLate) {
+      await Penalty.create({
+        user_id: userId,
+        category: "late",
+        note: `Terlambat ${latePenalty.lateHours} jam (${latePenalty.minutesLate} menit) saat scan QR absensi.`,
+        amount: latePenalty.amount,
+        penaltyAt: clockInAt,
+      });
+    }
+
     console.log('[clockInByQrScan] Success for user:', userId);
-    return res.status(201).json({ message: "Clock in by QR success", data: attendanceData });
+    return res.status(201).json({
+      message: "Clock in by QR success",
+      data: {
+        attendance: attendanceData,
+        late_penalty: latePenalty.isLate
+          ? {
+              amount: latePenalty.amount,
+              minutes_late: latePenalty.minutesLate,
+              hours_late: latePenalty.lateHours,
+            }
+          : null,
+      },
+    });
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error('[clockInByQrScan] Error:', errorMsg);

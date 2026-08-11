@@ -57,6 +57,40 @@ class AttendanceEntry {
   final DateTime? clockOut;
 }
 
+class PayrollBreakdownEntry {
+  PayrollBreakdownEntry({
+    required this.type,
+    required this.source,
+    required this.label,
+    required this.amount,
+    this.note,
+  });
+
+  final String type;
+  final String source;
+  final String label;
+  final String? note;
+  final num amount;
+}
+
+class PayrollSummaryEntry {
+  PayrollSummaryEntry({
+    required this.hasPayroll,
+    required this.periodLabel,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.totalIncome,
+    required this.breakdown,
+  });
+
+  final bool hasPayroll;
+  final String periodLabel;
+  final DateTime? periodStart;
+  final DateTime? periodEnd;
+  final num totalIncome;
+  final List<PayrollBreakdownEntry> breakdown;
+}
+
 class RequestPayload {
   RequestPayload({
     required this.type,

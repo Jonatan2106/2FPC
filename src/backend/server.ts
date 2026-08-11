@@ -38,29 +38,23 @@ const host = process.env.HOST || "0.0.0.0";
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log("Database connected");
+    console.log("Database connected successfully");
     console.log("DB NAME:", process.env.DATABASE_NAME);
-    console.log("DB HOST:", process.env.DATABASE_HOST);
 
-    // 🔴 TAMBAHKAN BARIS INI: Sinkronisasi tabel ke Supabase otomatis
-    console.log("🔄 Sinkronisasi struktur tabel ke database...");
-    console.log("✅ Semua tabel berhasil disinkronkan.");
-
-    // EKSEKUSI PEMBERSIHAN SETELAH DATABASE & TABEL SIAP
+    // EKSEKUSI PEMBERSIHAN SETELAH DATABASE SIAP
     await clearExpiredSessions();
 
   } catch (error) {
-    console.warn("⚠️  Database connection failed. Backend will run without database.");
+    console.warn("⚠️ Database connection failed. Backend will run without database.");
     console.warn("Error:", (error as Error).message);
-    console.warn("To fix: Check DATABASE_* env vars in config/.env");
   }
 
   const server = app.listen(port, host, () => {
-    console.log(`✅ Backend running on http://${host}:${port}`);
-    console.log(`📱 Mobile app can connect to http://10.109.188.126:${port}/api`);
+    console.log(`✅ Backend running on port ${port}`);
+    console.log(`📱 Production API Ready at ${process.env.VITE_API_BASE_URL || `http://${host}:${port}`}`);
   });
 
-  // Initialize cron jobs for daily reset
+  // Initialize cron jobs for daily reset (Mereset otomatis saat pergantian hari/tengah malam)
   initializeCronJobs();
 
   // Handle server errors

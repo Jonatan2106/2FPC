@@ -30,6 +30,66 @@ export class payroll extends Model {
     declare total_income: number;
 
     @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare base_salary: number | null;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare total_penalty: number | null;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare total_reimburse: number | null;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare leave_deduction: number | null;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare payroll_period_key: string | null;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: true
+    })
+    declare payroll_period_label: string | null;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true
+    })
+    declare payroll_period_start: Date | null;
+
+    @Column({
+        type: DataType.DATE,
+        allowNull: true
+    })
+    declare payroll_period_end: Date | null;
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: true
+    })
+    declare payroll_cutoff_days: number | null;
+
+    @Column({
+        type: DataType.JSONB,
+        allowNull: true
+    })
+    declare breakdown: unknown;
+
+    @Column({
         type: DataType.DATE,
         allowNull: true
     })

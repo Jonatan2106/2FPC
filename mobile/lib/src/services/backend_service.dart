@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/src/models/domain_models.dart';
 import 'package:mobile/src/services/device_id_service.dart';
@@ -21,7 +22,7 @@ class BackendService {
   }) async {
     try {
       final deviceId = await DeviceIdService.getOrCreateDeviceId();
-      print('[Login] Device ID: $deviceId');
+      debugPrint('[Login] Device ID: $deviceId');
 
       // Gunakan _postJson, kirim sebagai body
       final result = await _postJson(
@@ -32,8 +33,8 @@ class BackendService {
           'device_id': deviceId,
         },
       );
-      print('[Login] Backend response: $result');
-      
+      debugPrint('[Login] Backend response: $result');
+
       final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? result;
 
       final token = (data['token'] ?? '').toString();
@@ -51,7 +52,7 @@ class BackendService {
         role: (data['role'] ?? 'Staff').toString(),
       );
     } catch (e) {
-      print('[Login Error] $e');
+      debugPrint('[Login Error] $e');
       rethrow;
     }
   }
@@ -89,13 +90,75 @@ class BackendService {
           (item) => AttendanceEntry(
             id: (item['attendance_id'] ?? item['id'] ?? '').toString(),
             userId: (item['user_id'] ?? user.id).toString(),
-            clockIn: DateTime.tryParse((item['clock_in'] ?? '').toString()) ??
+            clockIn:
+                DateTime.tryParse((item['clock_in'] ?? '').toString()) ??
                 DateTime.now(),
             clockOut: DateTime.tryParse((item['clock_out'] ?? '').toString()),
           ),
         )
         .where((item) => item.id.isNotEmpty)
         .toList();
+  }
+
+  Future<PayrollSummaryEntry?> getPayrollSummary({
+    required AppUser user,
+    required DateTime referenceDate,
+  }) async {
+    final result = await _getJson(
+      path: '/web/payroll/summary',
+      token: user.token,
+      query: {
+        'user_id': user.id,
+        'reference_date': DateFormat('yyyy-MM-dd').format(referenceDate),
+      },
+    );
+
+    final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? result;
+    final hasPayroll = data['hasPayroll'] == true;
+
+    final breakdownRaw = data['breakdown'];
+    final breakdown = breakdownRaw is List
+        ? breakdownRaw
+              .whereType<Map<String, dynamic>>()
+              .map(
+                (item) => PayrollBreakdownEntry(
+                  type: (item['type'] ?? 'income').toString(),
+                  source: (item['source'] ?? '').toString(),
+                  label: (item['label'] ?? '').toString(),
+                  note: item['note']?.toString(),
+                  amount: num.tryParse((item['amount'] ?? 0).toString()) ?? 0,
+                ),
+              )
+              .toList()
+        : <PayrollBreakdownEntry>[];
+
+    if (!hasPayroll) {
+      return PayrollSummaryEntry(
+        hasPayroll: false,
+        periodLabel: (data['payroll_period_label'] ?? '').toString(),
+        periodStart: DateTime.tryParse(
+          (data['payroll_period_start'] ?? '').toString(),
+        ),
+        periodEnd: DateTime.tryParse(
+          (data['payroll_period_end'] ?? '').toString(),
+        ),
+        totalIncome: 0,
+        breakdown: const [],
+      );
+    }
+
+    return PayrollSummaryEntry(
+      hasPayroll: true,
+      periodLabel: (data['payroll_period_label'] ?? '').toString(),
+      periodStart: DateTime.tryParse(
+        (data['payroll_period_start'] ?? '').toString(),
+      ),
+      periodEnd: DateTime.tryParse(
+        (data['payroll_period_end'] ?? '').toString(),
+      ),
+      totalIncome: num.tryParse((data['total_income'] ?? 0).toString()) ?? 0,
+      breakdown: breakdown,
+    );
   }
 
   Future<List<Department>> getDepartments(AppUser user) async {

@@ -328,6 +328,7 @@ const ViewAttendance: React.FC = () => {
                     </TableBody>
                   </Table>
                 </TableContainer>
+
               </Paper>
             )}
           </Box>

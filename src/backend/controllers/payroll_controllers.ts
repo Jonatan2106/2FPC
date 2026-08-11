@@ -4,8 +4,7 @@ import { user as User } from "../../../models/user";
 import { penalty as Penalty } from "../../../models/penalty";
 import { reimburse as Reimburse } from "../../../models/reimburse";
 import { leave_management as LeaveManagement } from "../../../models/leave_management";
-
-const MONTHLY_CUTOFF_DAYS = 7;
+import { getPayrollPeriod } from "../utils/payroll_helpers";
 
 const toValidDate = (value: unknown): Date | null => {
   if (!value) return null;
@@ -28,46 +27,6 @@ const getValueFromModel = (item: { get: (key: string) => unknown }, keys: string
   return null;
 };
 
-const getPayrollPeriod = (reference: Date, cutoffDays: number) => {
-  const year = reference.getFullYear();
-  const month = reference.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // If now is within H-7 before month end, move calculation window to next month.
-  const cutoffStartDay = Math.max(1, daysInMonth - (cutoffDays - 1));
-  const cutoffStart = new Date(year, month, cutoffStartDay, 0, 0, 0, 0);
-  const useNextMonth = reference >= cutoffStart;
-
-  const targetMonthDate = useNextMonth
-    ? new Date(year, month + 1, 1)
-    : new Date(year, month, 1);
-
-  const start = new Date(
-    targetMonthDate.getFullYear(),
-    targetMonthDate.getMonth(),
-    1,
-    0,
-    0,
-    0,
-    0
-  );
-  const end = new Date(
-    targetMonthDate.getFullYear(),
-    targetMonthDate.getMonth() + 1,
-    0,
-    23,
-    59,
-    59,
-    999
-  );
-
-  return {
-    start,
-    end,
-    label: start.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
-  };
-};
-
 const extractReimburseAmount = (item: { amount?: number | string | null; evidence?: string | null }) => {
   // Handle DECIMAL values returned as strings by Sequelize
   if (item.amount !== undefined && item.amount !== null) {
@@ -85,6 +44,90 @@ const extractReimburseAmount = (item: { amount?: number | string | null; evidenc
   return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 };
 
+const buildPayrollBreakdown = (params: {
+  baseSalary: number;
+  penalties: Array<{ penalty_id: string; amount: number | null; category: string | null; note: string | null; penaltyAt: Date | null; createdAt?: Date | null }>;
+  reimburses: Array<{ reimburse_id: string; amount?: number | string | null; evidence?: string | null; approvedAt?: Date | null; createdAt?: Date | null }>;
+  leaveDays: number;
+  leaveDeduction: number;
+  periodLabel: string;
+}) => {
+  const penaltyItems = params.penalties.map((item) => ({
+    type: "deduction" as const,
+    source: "penalty",
+    label: item.category === "late" ? "Denda telat absensi" : "Denda lainnya",
+    note: item.note || "Penalty record",
+    amount: Number(item.amount ?? 0),
+    paid_at: item.penaltyAt ?? item.createdAt ?? null,
+  }));
+
+  const reimburseItems = params.reimburses.map((item) => ({
+    type: "income" as const,
+    source: "reimburse",
+    label: "Reimburse approved",
+    note: item.evidence || "Approved reimburse",
+    amount: extractReimburseAmount(item),
+    paid_at: item.approvedAt ?? item.createdAt ?? null,
+  }));
+
+  const leaveItems = params.leaveDays > 0
+    ? [{
+        type: "deduction" as const,
+        source: "leave",
+        label: `Potongan cuti (${params.leaveDays} hari)`,
+        note: `Periode payroll ${params.periodLabel}`,
+        amount: params.leaveDeduction,
+        paid_at: null as Date | null,
+      }]
+    : [];
+
+  const breakdown = [
+    {
+      type: "income" as const,
+      source: "base_salary",
+      label: "Gaji pokok",
+      note: "Nilai dasar dari payroll staff",
+      amount: params.baseSalary,
+      paid_at: null as Date | null,
+    },
+    ...reimburseItems,
+    ...penaltyItems,
+    ...leaveItems,
+  ];
+
+  const totalPenalty = params.penalties.reduce((acc, item) => acc + Number(item.amount ?? 0), 0);
+  const totalReimburse = params.reimburses.reduce((acc, item) => acc + extractReimburseAmount(item), 0);
+  const finalSalary = params.baseSalary + totalReimburse - totalPenalty - params.leaveDeduction;
+
+  return {
+    totalPenalty,
+    totalReimburse,
+    finalSalary,
+    breakdown,
+  };
+};
+
+const mapPayrollRecord = (payrollRecord: any) => {
+  const record = payrollRecord.get({ plain: true }) as Record<string, unknown>;
+  return {
+    payroll_id: record.payroll_id,
+    user_id: record.user_id,
+    total_income: record.total_income,
+    base_salary: record.base_salary,
+    total_penalty: record.total_penalty,
+    total_reimburse: record.total_reimburse,
+    leave_deduction: record.leave_deduction,
+    payroll_period_key: record.payroll_period_key,
+    payroll_period_label: record.payroll_period_label,
+    payroll_period_start: record.payroll_period_start,
+    payroll_period_end: record.payroll_period_end,
+    payroll_cutoff_days: record.payroll_cutoff_days,
+    breakdown: record.breakdown,
+    paidAt: record.paidAt,
+    createdAt: record.createdAt,
+  };
+};
+
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
     const { name, pay_date } = req.body as { name?: string; pay_date?: string };
@@ -98,7 +141,8 @@ export const generatePayroll = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "pay_date is invalid" });
     }
 
-    const period = getPayrollPeriod(referenceDate, MONTHLY_CUTOFF_DAYS);
+    const payrollCutoffDay = referenceDate.getDate();
+    const period = getPayrollPeriod(referenceDate, payrollCutoffDay);
 
     const targetUser = await User.findOne({ where: { name } });
     if (!targetUser) {
@@ -110,27 +154,25 @@ export const generatePayroll = async (req: Request, res: Response) => {
 
     // Calculate monthly penalty total
     const penalties = await Penalty.findAll({ where: { user_id } });
-    const totalPenalty = penalties
+    const filteredPenalties = penalties
       .filter((item) =>
         isWithinRange(
           getValueFromModel(item, ["penaltyAt", "createdAt"]),
           period.start,
           period.end
         )
-      )
-      .reduce((acc, item) => acc + (item.amount ?? 0), 0);
+      );
 
     // Calculate monthly reimburse total (only approved)
     const reimburses = await Reimburse.findAll({ where: { user_id, approve: true } });
-    const totalReimburse = reimburses
+    const filteredReimburses = reimburses
       .filter((item) =>
         isWithinRange(
           getValueFromModel(item, ["approvedAt", "updatedAt", "createdAt"]),
           period.start,
           period.end
         )
-      )
-      .reduce((acc, item) => acc + extractReimburseAmount(item), 0);
+      );
 
     // Calculate monthly leave days (approved leaves)
     const leaves = await LeaveManagement.findAll({ where: { user_id, cuti: true } });
@@ -145,35 +187,115 @@ export const generatePayroll = async (req: Request, res: Response) => {
     const leaveDeduction = leaveDays * 50000;
 
     // Calculate final salary
-    const finalSalary = baseSalary + totalReimburse - totalPenalty - leaveDeduction;
-
-    // Create payroll record
-    const payrollData = await Payroll.create({
-      user_id,
-      total_income: finalSalary,
-      paidAt: new Date(),
+    const payrollComputation = buildPayrollBreakdown({
+      baseSalary,
+      penalties: filteredPenalties,
+      reimburses: filteredReimburses,
+      leaveDays,
+      leaveDeduction,
+      periodLabel: period.label,
     });
+
+    const existingPayroll = await Payroll.findOne({
+      where: {
+        user_id,
+        payroll_period_key: period.key,
+      },
+    });
+
+    const payload = {
+      user_id,
+      total_income: payrollComputation.finalSalary,
+      base_salary: baseSalary,
+      total_penalty: payrollComputation.totalPenalty,
+      total_reimburse: payrollComputation.totalReimburse,
+      leave_deduction: leaveDeduction,
+      payroll_period_key: period.key,
+      payroll_period_label: period.label,
+      payroll_period_start: period.start,
+      payroll_period_end: period.end,
+      payroll_cutoff_days: payrollCutoffDay,
+      breakdown: payrollComputation.breakdown,
+      paidAt: referenceDate,
+    };
+
+    const payrollData = existingPayroll
+      ? await existingPayroll.update(payload)
+      : await Payroll.create(payload);
 
     return res.status(201).json({
       message: "Payroll generated",
       data: {
-        payroll_id: payrollData.payroll_id,
+        ...mapPayrollRecord(payrollData),
         user_id,
         staff_name: name,
         base_salary: baseSalary,
-        total_penalty: totalPenalty,
-        total_reimburse: totalReimburse,
+        total_penalty: payrollComputation.totalPenalty,
+        total_reimburse: payrollComputation.totalReimburse,
         leave_days: leaveDays,
         leave_deduction: leaveDeduction,
-        final_salary: finalSalary,
+        final_salary: payrollComputation.finalSalary,
         payroll_period_start: period.start,
         payroll_period_end: period.end,
         payroll_period_label: period.label,
-        payroll_cutoff_days: MONTHLY_CUTOFF_DAYS,
+        payroll_period_key: period.key,
+        payroll_cutoff_days: payrollCutoffDay,
+        breakdown: payrollComputation.breakdown,
       },
     });
   } catch (error) {
     return res.status(500).json({ message: "Failed to generate payroll", error });
+  }
+};
+
+export const getPayrollSummary = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query.user_id as string | undefined) || (req.headers["x-user-id"] as string | undefined);
+    const referenceDate = req.query.reference_date ? toValidDate(req.query.reference_date) : new Date();
+
+    if (!userId) {
+      return res.status(400).json({ message: "user_id is required" });
+    }
+
+    if (!referenceDate) {
+      return res.status(400).json({ message: "reference_date is invalid" });
+    }
+
+    const payrollCutoffDay = referenceDate.getDate();
+    const period = getPayrollPeriod(referenceDate, payrollCutoffDay);
+    const payrollRecord = await Payroll.findOne({
+      where: {
+        user_id: userId,
+        payroll_period_key: period.key,
+      },
+    });
+
+    if (!payrollRecord) {
+      const targetUser = await User.findByPk(userId);
+      return res.status(200).json({
+        message: "Payroll not found for selected period",
+        data: {
+          hasPayroll: false,
+          user_id: userId,
+          staff_name: targetUser?.name ?? null,
+          payroll_period_key: period.key,
+          payroll_period_label: period.label,
+          payroll_period_start: period.start,
+          payroll_period_end: period.end,
+          payroll_cutoff_days: payrollCutoffDay,
+        },
+      });
+    }
+
+    return res.status(200).json({
+      message: "Payroll fetched",
+      data: {
+        hasPayroll: true,
+        ...mapPayrollRecord(payrollRecord),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to fetch payroll summary", error });
   }
 };
 
