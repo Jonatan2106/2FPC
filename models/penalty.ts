@@ -24,10 +24,10 @@ export class penalty extends Model {
     declare penalty_id: string;
 
     @Column({
-        type: DataType.ENUM("unpaid_cuti", "broken_stuff", "late", "other"),
+        type: DataType.ENUM("unpaid_cuti", "broken_stuff", "other"),
         allowNull: true,
     })
-    declare category: "unpaid_cuti" | "broken_stuff" | "late" | "other";
+    declare category: "unpaid_cuti" | "broken_stuff" | "other";
 
     @Column({
         type: DataType.STRING,

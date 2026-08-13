@@ -9,7 +9,7 @@ export default {
         defaultValue: Sequelize.UUIDV4 
       },
       category: { 
-        type: Sequelize.ENUM('unpaid_cuti', 'broken_stuff', 'late', 'other') 
+        type: Sequelize.ENUM('unpaid_cuti', 'broken_stuff', 'other') 
       },
       note: { 
         type: Sequelize.STRING 

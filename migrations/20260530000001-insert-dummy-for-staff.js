@@ -48,7 +48,7 @@ export default {
 
         penaltyData.push({
           penalty_id: randomUUID(),
-          category: i % 3 === 0 ? 'late' : i % 3 === 1 ? 'broken_stuff' : 'other',
+          category: i % 3 === 1 ? 'broken_stuff' : 'other',
           note: `Auto-generated penalty #${i + 1}`,
           amount: (i + 1) * 25000,
           penaltyAt: now,
