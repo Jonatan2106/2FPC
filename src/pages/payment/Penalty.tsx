@@ -131,7 +131,6 @@ const Penalty: React.FC = () => {
   const penaltyCategories = [
     { value: "unpaid_cuti", label: "Unpaid Leave" },
     { value: "broken_stuff", label: "Broken Item" },
-    { value: "late", label: "Late" },
     { value: "other", label: "Other" },
   ];
 

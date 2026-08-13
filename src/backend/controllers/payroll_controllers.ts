@@ -55,7 +55,7 @@ const buildPayrollBreakdown = (params: {
   const penaltyItems = params.penalties.map((item) => ({
     type: "deduction" as const,
     source: "penalty",
-    label: item.category === "late" ? "Denda telat absensi" : "Denda lainnya",
+    label: "Denda lainnya",
     note: item.note || "Penalty record",
     amount: Number(item.amount ?? 0),
     paid_at: item.penaltyAt ?? item.createdAt ?? null,

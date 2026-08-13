@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import QRCode from "qrcode";
 import { attendance as Attendance } from "../../../models/attendance";
-import { penalty as Penalty } from "../../../models/penalty";
 import { user as User } from "../../../models/user";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { departement as Departement } from "../../../models/departements";
@@ -68,15 +67,6 @@ export const clockInAttendanceStaff = async (req: Request, res: Response) => {
     });
 
     const latePenalty = calculateLatePenalty(clockInAt);
-    if (latePenalty.isLate) {
-      await Penalty.create({
-        user_id,
-        category: "late",
-        note: `Terlambat ${latePenalty.lateHours} jam (${latePenalty.minutesLate} menit) saat clock in.`,
-        amount: latePenalty.amount,
-        penaltyAt: clockInAt,
-      });
-    }
 
     return res.status(201).json({
       message: "Clock in success",
@@ -273,15 +263,6 @@ export const clockInByQrScan = async (req: Request, res: Response) => {
     });
 
     const latePenalty = calculateLatePenalty(clockInAt);
-    if (latePenalty.isLate) {
-      await Penalty.create({
-        user_id: userId,
-        category: "late",
-        note: `Terlambat ${latePenalty.lateHours} jam (${latePenalty.minutesLate} menit) saat scan QR absensi.`,
-        amount: latePenalty.amount,
-        penaltyAt: clockInAt,
-      });
-    }
 
     console.log('[clockInByQrScan] Success for user:', userId);
     return res.status(201).json({
