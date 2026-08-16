@@ -2,6 +2,11 @@ import type { Request, Response } from "express";
 import { user as User } from "../../../models/user";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { departement as Department } from "../../../models/departements";
+import { leave_management as LeaveManagement } from "../../../models/leave_management";
+import { reimburse as Reimbursement } from "../../../models/reimburse";
+import { attendance as Attendance } from "../../../models/attendance";
+import { payroll as Payroll } from "../../../models/payroll";
+import { penalty as Penalty } from "../../../models/penalty";
 
 const getRequesterAccess = async (req: Request) => {
   const requesterId = req.headers["x-user-id"] as string | undefined;
@@ -148,9 +153,42 @@ export const deleteDepartmentAdmin = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Department not found" });
     }
 
+    // 1. Cari semua staff/user yang memiliki departement_id ini melalui tabel StaffDetail
+    const staffDetails = await StaffDetail.findAll({
+      where: { departement_id: departmentId },
+    });
+
+    // Ambil semua user_id dari staff tersebut
+    const userIds = staffDetails.map((staff) => staff.user_id);
+
+    if (userIds.length > 0) {
+      // 2. Hapus data relasi dari tabel-tabel terkait milik para user tersebut 
+      // (Sesuaikan nama model Sequelize Anda: LeaveManagement, Attendance, Reimbursement, dll)
+      await LeaveManagement.destroy({ where: { user_id: userIds } }).catch(() => {});
+      await Reimbursement.destroy({ where: { user_id: userIds } }).catch(() => {});
+      await Attendance.destroy({ where: { user_id: userIds } }).catch(() => {});
+      await Payroll.destroy({ where: { user_id: userIds } }).catch(() => {});
+      await Penalty.destroy({ where: { user_id: userIds } }).catch(() => {});
+
+      // 3. Hapus data staff_details mereka
+      await StaffDetail.destroy({
+        where: { departement_id: departmentId },
+      });
+
+      // 4. Hapus akun utamanya dari tabel users
+      await User.destroy({
+        where: { user_id: userIds },
+      });
+    }
+
+    // 5. Terakhir, hapus departemen itu sendiri
     await department.destroy();
-    return res.status(200).json({ message: "Department deleted" });
+
+    return res.status(200).json({ 
+      message: "Department and all associated users/records deleted successfully" 
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to delete department", error });
+    console.error("[deleteDepartmentAdmin] Error:", error);
+    return res.status(500).json({ message: "Failed to delete department and associated users", error });
   }
 };

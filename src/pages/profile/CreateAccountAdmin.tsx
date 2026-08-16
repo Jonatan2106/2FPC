@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import Navbar from "../../common/Navbar";
+import { useNavigate } from "react-router-dom";
 
 interface Department {
   departement_id: string;
@@ -27,6 +28,7 @@ const CreateUser: React.FC = () => {
   const [departmentsLoading, setDepartmentsLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState(false);
+  const navigate = useNavigate();
 
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
   const API_BASE_URL = `${BASE_URL}/api/web`;
@@ -90,8 +92,13 @@ const CreateUser: React.FC = () => {
         setName("");
         setRole("Staff");
         setSelectedDepartment("");
-        // Reset success message after 2 seconds
-        setTimeout(() => setSuccess(false), 2000);
+        
+        // --- UBAH DI SINI ---
+        // Tampilkan pesan sukses sebentar, lalu arahkan otomatis ke management-tree
+        setTimeout(() => {
+          navigate("/management-tree");
+        }, 1000);
+        
       } else {
         setError(data.message || "Failed to create user");
       }

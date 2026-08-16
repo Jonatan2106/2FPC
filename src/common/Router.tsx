@@ -16,6 +16,8 @@ import ViewLeave from "../pages/leave/ViewLeave";
 import ManagementTree from "../pages/ManagementTree";
 import ViewUsers from "../pages/profile/ViewUsers";
 import AdminEditUserPage from "../pages/profile/AdminEditUserPage";
+import CreateDepartment from "../pages/departement/CreateDepartementAdmin";
+import EditDepartmentAdmin from "../pages/departement/EditDepartmentAdmin";
 
 export function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -63,8 +65,10 @@ export function Router() {
             <Route path="/penalty-requests" element={<Penalty />} />
             <Route path="/view-leave" element={<ViewLeave />} />
             <Route path="/management-tree" element={<ManagementTree />} />
+            <Route path="/create-departement" element={<CreateDepartment />} />
             <Route path="/users" element={<ViewUsers />} />
             <Route path="/users/:id" element={<AdminEditUserPage />} />
+            <Route path="/edit-departement/:id" element={<EditDepartmentAdmin />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

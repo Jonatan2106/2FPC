@@ -182,7 +182,7 @@ const AdminEditUserPage: React.FC = () => {
 
       setSuccess("User updated successfully! Redirecting...");
       setEditing(false);
-      
+
       setTimeout(() => {
         navigate("/management-tree");
       }, 1000);
@@ -215,7 +215,7 @@ const AdminEditUserPage: React.FC = () => {
       }
 
       // Jika berhasil, arahkan kembali ke halaman manajemen user
-      navigate("/users");
+      navigate("/management-tree");
     } catch (err) {
       setError("Error deleting user");
       console.error(err);

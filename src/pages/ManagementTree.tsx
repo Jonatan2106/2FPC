@@ -20,6 +20,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useNavigate } from "react-router-dom";
 import Navbar from "../common/Navbar";
 
@@ -138,30 +140,67 @@ const ManagementTree: React.FC = () => {
       key={node.id}
       itemId={node.id}
       label={
-        <Box sx={{ display: "flex", alignItems: "center", py: 1, gap: 1.5 }}>
-          {node.type === "department" ? (
-            <BusinessIcon sx={{ color: "#2563eb", fontSize: 20 }} />
-          ) : (
-            <PersonIcon sx={{ color: "#64748b", fontSize: 20 }} />
-          )}
+        <Box 
+          sx={{ 
+            display: "flex", 
+            alignItem: "center", 
+            justifyContent: "space-between", 
+            width: "100%", 
+            pr: 2,
+            py: 0.5 
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            {node.type === "department" ? (
+              <BusinessIcon sx={{ color: "#2563eb", fontSize: 20 }} />
+            ) : (
+              <PersonIcon sx={{ color: "#64748b", fontSize: 20 }} />
+            )}
 
-          <Typography
-            variant="body1"
-            sx={{
-              fontWeight: node.type === "department" ? 600 : 500,
-              color: node.type === "department" ? "#0f172a" : "#334155",
-            }}
-          >
-            {node.name}
-          </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: node.type === "department" ? 600 : 500,
+                color: node.type === "department" ? "#0f172a" : "#334155",
+              }}
+            >
+              {node.name}
+            </Typography>
 
-          {node.type === "user" && node.role && (
-            <Chip
-              label={node.role}
+            {node.type === "user" && node.role && (
+              <Chip
+                label={node.role}
+                size="small"
+                color={node.role === "Manager" ? "success" : "default"}
+                sx={{ fontWeight: 500, borderRadius: 1.5, height: 22 }}
+              />
+            )}
+          </Box>
+
+          {/* Tombol aksi cepat khusus untuk level Department */}
+          {node.type === "department" && (
+            <Button
               size="small"
-              color={node.role === "Manager" ? "success" : "default"}
-              sx={{ fontWeight: 500, borderRadius: 1.5, height: 22 }}
-            />
+              variant="outlined"
+              startIcon={<EditIcon sx={{ fontSize: "16px !important" }} />}
+              onClick={(e) => {
+                e.stopPropagation(); // Mencegah tree item tertutup saat tombol diklik
+                navigate(`/edit-departement/${node.id}`);
+              }}
+              sx={{
+                textTransform: "none",
+                fontSize: "0.75rem",
+                py: 0.25,
+                px: 1.25,
+                borderRadius: 1.5,
+                borderColor: "#cbd5e1",
+                color: "#334155",
+                bgcolor: "#ffffff",
+                "&:hover": { bgcolor: "#f8fafc", borderColor: "#2563eb", color: "#2563eb" },
+              }}
+            >
+              Edit Dept
+            </Button>
           )}
         </Box>
       }
@@ -171,7 +210,7 @@ const ManagementTree: React.FC = () => {
           py: 0.5,
           px: 1,
           my: 0.5,
-          "&:hover": {
+          '&:hover': {
             backgroundColor: "#f1f5f9",
           },
         },
@@ -227,7 +266,7 @@ const ManagementTree: React.FC = () => {
                 boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
               }}
             >
-              {/* Header dengan Flexbox agar Judul di kiri dan Tombol Edit Users di kanan */}
+              {/* Header dengan tombol Create Department dan Edit Users */}
               <Box 
                 sx={{ 
                   mb: 4, 
@@ -247,26 +286,48 @@ const ManagementTree: React.FC = () => {
                   </Typography>
                 </Box>
 
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  startIcon={<EditIcon />}
-                  onClick={() => navigate("/users")}
-                  sx={{
-                    py: 1,
-                    px: 2.5,
-                    borderRadius: 2.5,
-                    fontWeight: 600,
-                    textTransform: "none",
-                    borderColor: "#cbd5e1",
-                    color: "#334155",
-                    bgcolor: "#ffffff",
-                    whiteSpace: "nowrap",
-                    "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8" },
-                  }}
-                >
-                  Edit Users
-                </Button>
+                <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate("/create-departement")}
+                    sx={{
+                      py: 1,
+                      px: 2.5,
+                      borderRadius: 2.5,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      bgcolor: "#2563eb",
+                      boxShadow: "none",
+                      whiteSpace: "nowrap",
+                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                    }}
+                  >
+                    Create Department
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    startIcon={<EditIcon />}
+                    onClick={() => navigate("/users")}
+                    sx={{
+                      py: 1,
+                      px: 2.5,
+                      borderRadius: 2.5,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      borderColor: "#cbd5e1",
+                      color: "#334155",
+                      bgcolor: "#ffffff",
+                      whiteSpace: "nowrap",
+                      "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8" },
+                    }}
+                  >
+                    Edit Users
+                  </Button>
+                </Box>
               </Box>
 
               {error && (
