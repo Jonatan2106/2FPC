@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { User } from "../types/user";
 
 interface AuthContextType {
   user: any; // Menggunakan any agar bisa membaca staff_detail

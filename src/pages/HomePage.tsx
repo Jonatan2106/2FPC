@@ -15,7 +15,6 @@ import {
   ReceiptLong,
   EventBusy,
   HowToReg,
-  Person,
   AccountTree,
   Gavel,
   Schedule,

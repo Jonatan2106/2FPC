@@ -11,7 +11,7 @@ import {
   CardContent,
 } from "@mui/material";
 import { Link } from "react-router-dom";
-import { Email, ArrowBack } from "@mui/icons-material";
+import { ArrowBack } from "@mui/icons-material";
 
 const ForgotPassword: React.FC = () => {
   const [email, setEmail] = React.useState("");

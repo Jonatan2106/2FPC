@@ -13,11 +13,10 @@ import {
   CircularProgress,
   Alert,
   Card,
-  CardContent,
   TableContainer,
   IconButton,
 } from "@mui/material";
-import { Close, CheckCircle, Cancel, Visibility, CalendarMonth } from "@mui/icons-material";
+import { Close } from "@mui/icons-material";
 
 import type { LeaveManagements } from "../../types/leave_management";
 import Navbar from "../../common/Navbar";
@@ -244,7 +243,12 @@ const LeaveManagement: React.FC = () => {
                         </TableCell>
 
                         <TableCell>
-                          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, truncate: true }}>
+                          <Typography variant="body2" color="text.secondary" sx={{
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
                             {l.reason || "-"}
                           </Typography>
                         </TableCell>
