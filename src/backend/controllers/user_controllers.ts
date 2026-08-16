@@ -2,6 +2,10 @@ import type { Request, Response } from "express";
 import { user as User } from "../../../models/user";
 import { departement as Departement } from "../../../models/departements";
 import { staff_detail as StaffDetail } from "../../../models/staff_details";
+import { leave_management as LeaveManagement } from "../../../models/leave_management";
+import { reimburse as Reimbursement } from "../../../models/reimburse";
+import { attendance as Attendance } from "../../../models/attendance";
+import { penalty as Penalty } from "../../../models/penalty";
 import { user as UserModel } from "../../../models/user";
 import { generateToken } from "../utils/jwt_helper";
 import bcrypt from "bcrypt";
@@ -352,7 +356,6 @@ export const deleteUserAdmin = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Pengecekan hak akses department jika yang menghapus bukan Admin
     if (access.role !== "Admin") {
       if (targetUser.staff_detail?.departement_id !== access.departementId) {
         return res.status(403).json({
@@ -361,12 +364,20 @@ export const deleteUserAdmin = async (req: Request, res: Response) => {
       }
     }
 
-    // Hapus data staff_detail terlebih dahulu (jika ada) karena ada relasi foreign key
+    // --- TAMBAHKAN PENGHAPUSAN TABEL TERKAIT DI SINI ---
+    // Sesuaikan nama model Sequelize-nya dengan yang ada di project Anda (misal: LeaveManagement, Reimbursement, dll)
+    await LeaveManagement.destroy({ where: { user_id: userId } }).catch(() => {});
+    await Reimbursement.destroy({ where: { user_id: userId } }).catch(() => {});
+    await Attendance.destroy({ where: { user_id: userId } }).catch(() => {});
+    await Penalty.destroy({ where: { user_id: userId } }).catch(() => {});
+    // --------------------------------------------------
+
+    // Hapus data staff_detail
     await StaffDetail.destroy({
       where: { user_id: userId },
     });
 
-    // Hapus user utama
+    // Terakhir, hapus user utama
     await targetUser.destroy();
 
     return res.status(200).json({
