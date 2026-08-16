@@ -81,6 +81,7 @@ class PayrollSummaryEntry {
     required this.periodEnd,
     required this.totalIncome,
     required this.breakdown,
+    this.paymentStatus = 'unpaid',
   });
 
   final bool hasPayroll;
@@ -89,6 +90,7 @@ class PayrollSummaryEntry {
   final DateTime? periodEnd;
   final num totalIncome;
   final List<PayrollBreakdownEntry> breakdown;
+  final String paymentStatus;
 }
 
 class RequestPayload {

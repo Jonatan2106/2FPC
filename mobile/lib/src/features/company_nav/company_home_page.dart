@@ -120,6 +120,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
               token: widget.user.token,
               departmentId: selectedDepartment,
               month: _focusedDay,
+              userRole: widget.user.role,
             );
 
       if (!mounted) {
@@ -193,6 +194,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         token: widget.user.token,
         departmentId: _selectedDepartmentId!,
         month: month,
+        userRole: widget.user.role,
       );
       if (!mounted) {
         return;

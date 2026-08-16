@@ -45,9 +45,9 @@ class BackendService {
 
       return AppUser(
         id: (data['user_id'] ?? '').toString(),
-        name: (data['username'] ?? 'Staff').toString(),
-        departmentId: 'unknown',
-        departmentName: 'Departemen',
+        name: (data['name'] ?? data['username'] ?? 'Staff').toString(),
+        departmentId: (data['department_id'] ?? 'unknown').toString(),
+        departmentName: (data['department_name'] ?? 'Departemen').toString(),
         token: token,
         role: (data['role'] ?? 'Staff').toString(),
       );
@@ -132,6 +132,10 @@ class BackendService {
               .toList()
         : <PayrollBreakdownEntry>[];
 
+    final totalIncome = num.tryParse((data['total_income'] ?? data['base_salary'] ?? 0).toString()) ?? 0;
+
+    final paymentStatus = (data['payment_status'] ?? (hasPayroll ? 'paid' : 'unpaid')).toString();
+
     if (!hasPayroll) {
       return PayrollSummaryEntry(
         hasPayroll: false,
@@ -142,8 +146,9 @@ class BackendService {
         periodEnd: DateTime.tryParse(
           (data['payroll_period_end'] ?? '').toString(),
         ),
-        totalIncome: 0,
+        totalIncome: totalIncome,
         breakdown: const [],
+        paymentStatus: paymentStatus,
       );
     }
 
@@ -156,8 +161,9 @@ class BackendService {
       periodEnd: DateTime.tryParse(
         (data['payroll_period_end'] ?? '').toString(),
       ),
-      totalIncome: num.tryParse((data['total_income'] ?? 0).toString()) ?? 0,
+      totalIncome: totalIncome,
       breakdown: breakdown,
+      paymentStatus: paymentStatus,
     );
   }
 
@@ -185,6 +191,7 @@ class BackendService {
     required String token,
     required String departmentId,
     required DateTime month,
+    String? userRole,
   }) async {
     final result = await _getJson(
       path: '/web/admin/leave-requests/timeline',
@@ -196,7 +203,7 @@ class BackendService {
       return const [];
     }
 
-    return rawList
+    final entries = rawList
         .whereType<Map<String, dynamic>>()
         .map((item) => _mapLeaveEntry(item, fallbackDepartmentId: departmentId))
         .where(
@@ -206,6 +213,30 @@ class BackendService {
               entry.startDate.month == month.month,
         )
         .toList();
+
+    if (userRole == 'Staff') {
+      return entries
+          .where((entry) => entry.type.toLowerCase().contains('disetujui'))
+          .toList();
+    }
+
+    return entries;
+  }
+
+  Future<Map<String, dynamic>> markPayrollAsPaid({
+    required AppUser user,
+    required DateTime payDate,
+  }) async {
+    final result = await _postJson(
+      path: '/web/payroll/pay',
+      token: user.token,
+      body: {
+        'user_id': user.id,
+        'pay_date': DateFormat('yyyy-MM-dd').format(payDate),
+      },
+    );
+
+    return (result['data'] as Map<String, dynamic>?) ?? {};
   }
 
   Future<void> submitRequest({
@@ -238,14 +269,17 @@ class BackendService {
     final now = DateTime.now();
     final requestDate =
         DateTime.tryParse((item['requested_at'] ?? '').toString()) ?? now;
+    final approved = item['approved'] == true || item['cuti'] == true;
+    final employeeName = (item['user_name'] ?? item['user']?['name'] ?? 'User ${item['user_id'] ?? '-'}').toString();
+    final departmentId = (item['departement_id'] ?? item['department_id'] ?? fallbackDepartmentId).toString();
 
     return LeaveEntry(
       id: (item['leave_id'] ?? item['id'] ?? '').toString(),
-      employeeName: 'User ${item['user_id'] ?? '-'}',
-      departmentId: (item['departement_id'] ?? fallbackDepartmentId).toString(),
+      employeeName: employeeName,
+      departmentId: departmentId,
       startDate: requestDate,
       endDate: requestDate,
-      type: (item['approved'] == true) ? 'cuti disetujui' : 'menunggu approval',
+      type: approved ? 'cuti disetujui' : 'menunggu approval',
     );
   }
 

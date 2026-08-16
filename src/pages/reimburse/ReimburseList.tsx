@@ -13,6 +13,9 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import type { Reimburse } from "../../types/reimburse";
 import Navbar from "../../common/Navbar";
 
@@ -153,215 +156,300 @@ const ReimburseList: React.FC = () => {
       sx={{
         width: "100%",
         minHeight: "100vh",
-        bgcolor: "#ffffff",
+        backgroundColor: "#f8fafc",
         display: "flex",
-        justifyContent: "center",
-        px: 2,
-        py: 4,
+        flexDirection: "column",
       }}
     >
-      <Navbar/>
-      <Box sx={{ width: "100%", maxWidth: 1000 }}>
-        {/* Title */}
-        <Typography variant="h5" fontWeight={600} mb={3}>
-          Reimburse Requests
-        </Typography>
+      <Navbar />
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+      {/* Box ini khusus untuk padding dan alignment konten di bawah Navbar */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          flexGrow: 1,
+          px: { xs: 2, sm: 3 },
+          py: { xs: 3, md: 5 },
+          boxSizing: "border-box",
+        }}
+      >
+        <Box sx={{ width: "100%", maxWidth: 1100 }}>
+          {/* Title */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h4" fontWeight={700} color="#0f172a" gutterBottom>
+              Reimburse Requests 💳
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Review, approve, or reject staff reimbursement claims
+            </Typography>
           </Box>
-        ) : (
-          <>
-            {/* Table Container */}
-            <Box
-              sx={{
-                border: "1px solid #e0e0e0",
-                borderRadius: 2,
-                overflow: "auto",
-                maxHeight: "60vh",
-                backgroundColor: "#fff",
-                position: "relative",
-              }}
-              className="hide-scrollbar"
-            >
-              <Table stickyHeader>
-                <TableHead sx={{ position: "sticky", top: 0, zIndex: 5 }}>
-                  <TableRow sx={{ backgroundColor: "#fafafa", position: 'relative' }}>
-                    <TableCell><b>Staff</b></TableCell>
-                    <TableCell><b>Amount</b></TableCell>
-                    <TableCell><b>Evidence</b></TableCell>
-                    <TableCell><b>Status</b></TableCell>
-                    <TableCell><b>Created At</b></TableCell>
-                    <TableCell><b>Updated At</b></TableCell>
-                    <TableCell align="right"><b>Actions</b></TableCell>
-                  </TableRow>
-                </TableHead>
 
-                <TableBody>
-                  {data.map((r) => (
-                    <TableRow
-                      key={r.reimburse_id}
-                      hover
-                      sx={{ cursor: "pointer" }}
-                      onClick={() => setSelected(r)}
-                    >
-                      <TableCell>
-                        <div>{r.user?.name}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>{r.user?.departement ?? ''}</div>
-                      </TableCell>
+          {error && (
+            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-                    <TableCell>
-                      {Number.isFinite(Number(r.amount)) && Number(r.amount) > 0
-                        ? Number(r.amount).toLocaleString("id-ID")
-                        : "0"}
-                    </TableCell>
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}>
+              <CircularProgress sx={{ color: "#2563eb" }} />
+            </Box>
+          ) : (
+            <>
+              {/* Table Container */}
+              <Box
+                sx={{
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 3,
+                  overflow: "auto",
+                  maxHeight: "65vh",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                  position: "relative",
+                }}
+                className="hide-scrollbar"
+              >
+                <Table stickyHeader>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: "#f8fafc" }}>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Staff</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Amount</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Evidence</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Created At</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Updated At</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600, color: "#475569" }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
 
-                    <TableCell>
-                      {r.evidence ? (
-                        <img
-                          src={r.evidence}
-                          alt="evidence"
-                          style={{
-                            width: 50,
-                            height: 50,
-                            objectFit: "cover",
-                            borderRadius: 6,
-                          }}
-                        />
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
+                  <TableBody>
+                    {data.map((r) => (
+                      <TableRow
+                        key={r.reimburse_id}
+                        hover
+                        sx={{ cursor: "pointer", "&:last-child td": { borderBottom: 0 } }}
+                        onClick={() => setSelected(r)}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600} color="#0f172a">
+                            {r.user?.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {r.user?.departement ?? ''}
+                          </Typography>
+                        </TableCell>
 
-                    <TableCell>
-                      <Chip
-                        label={r.approve ? "APPROVED" : "PENDING"}
-                        color={
-                          r.approve
-                            ? "success"
-                            : "warning"
-                        }
-                      />
-                    </TableCell>
+                        <TableCell sx={{ color: "#475569", fontWeight: 500 }}>
+                          {Number.isFinite(Number(r.amount)) && Number(r.amount) > 0
+                            ? `Rp ${Number(r.amount).toLocaleString("id-ID")}`
+                            : "Rp 0"}
+                        </TableCell>
 
-                      <TableCell>{formatDate(r.createdAt)}</TableCell>
-
-                      <TableCell>{formatDate(r.updatedAt)}</TableCell>
-
-                      <TableCell align="right">
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 1,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {!r.approve && (
-                            <>
-                              <Button
-                                size="small"
-                                variant="contained"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApprove(r.reimburse_id);
-                                }}
-                                disabled={actionLoading}
-                              >
-                                Approve
-                              </Button>
-
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReject(r.reimburse_id);
-                                }}
-                                disabled={actionLoading}
-                              >
-                                Reject
-                              </Button>
-                            </>
+                        <TableCell>
+                          {r.evidence ? (
+                            <img
+                              src={r.evidence}
+                              alt="evidence"
+                              style={{
+                                width: 48,
+                                height: 48,
+                                objectFit: "cover",
+                                borderRadius: 8,
+                                border: "1px solid #e2e8f0",
+                              }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">-</Typography>
                           )}
+                        </TableCell>
 
-                          <Button
+                        <TableCell>
+                          <Chip
+                            label={r.approve ? "APPROVED" : "PENDING"}
+                            color={r.approve ? "success" : "warning"}
                             size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelected(r);
+                            sx={{ fontWeight: 500, borderRadius: 1.5 }}
+                          />
+                        </TableCell>
+
+                        <TableCell sx={{ color: "#475569" }}>{formatDate(r.createdAt)}</TableCell>
+
+                        <TableCell sx={{ color: "#475569" }}>{formatDate(r.updatedAt)}</TableCell>
+
+                        <TableCell align="right">
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              gap: 1,
+                              flexWrap: "wrap",
                             }}
                           >
-                            View
-                          </Button>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
+                            {!r.approve && (
+                              <>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  startIcon={<CheckCircleIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApprove(r.reimburse_id);
+                                  }}
+                                  disabled={actionLoading}
+                                  sx={{
+                                    borderRadius: 2,
+                                    fontWeight: 600,
+                                    textTransform: "none",
+                                    bgcolor: "#16a34a",
+                                    boxShadow: "none",
+                                    "&:hover": { bgcolor: "#15803d", boxShadow: "none" },
+                                  }}
+                                >
+                                  Approve
+                                </Button>
 
-            {/* DRAWER */}
-            <Drawer
-              anchor="right"
-              open={!!selected}
-              onClose={() => setSelected(null)}
-            >
-              <Box sx={{ width: 400, p: 3 }}>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  startIcon={<CancelIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReject(r.reimburse_id);
+                                  }}
+                                  disabled={actionLoading}
+                                  sx={{
+                                    borderRadius: 2,
+                                    fontWeight: 600,
+                                    textTransform: "none",
+                                    borderColor: "#fca5a5",
+                                    "&:hover": { borderColor: "#dc2626", bgcolor: "#fef2f2" },
+                                  }}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<VisibilityIcon />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelected(r);
+                              }}
+                              sx={{
+                                borderRadius: 2,
+                                fontWeight: 600,
+                                textTransform: "none",
+                                borderColor: "#cbd5e1",
+                                color: "#0f172a",
+                                "&:hover": { borderColor: "#2563eb", bgcolor: "#eff6ff" },
+                              }}
+                            >
+                              View
+                            </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+
+              {/* DRAWER */}
+              <Drawer
+                anchor="right"
+                open={!!selected}
+                onClose={() => setSelected(null)}
+                PaperProps={{
+                  sx: { width: { xs: "100%", sm: 420 }, p: 4, backgroundColor: "#ffffff" }
+                }}
+              >
                 {selected && (
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <Typography variant="h6">Reimburse Details</Typography>
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Reimburse ID
+                  <Box display="flex" flexDirection="column" gap={3}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h5" fontWeight={700} color="#0f172a">
+                        Reimburse Details
                       </Typography>
-                      <Typography>{selected.reimburse_id}</Typography>
                     </Box>
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Staff
+
+                    <Box sx={{ p: 2, bgcolor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        REIMBURSE ID
                       </Typography>
-                      <Typography>{selected.user?.name ?? selected.user_id}</Typography>
-                      <Typography variant="caption" color="text.secondary">{selected.user?.departement ?? ''}</Typography>
+                      <Typography variant="body2" fontWeight={500} color="#0f172a" sx={{ wordBreak: "break-all" }}>
+                        {selected.reimburse_id}
+                      </Typography>
                     </Box>
+
                     <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Status
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        STAFF MEMBER
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600} color="#0f172a">
+                        {selected.user?.name ?? selected.user_id}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {selected.user?.departement ?? ''}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom display="block">
+                        STATUS
                       </Typography>
                       <Chip
                         label={selected.approve ? "APPROVED" : "PENDING"}
-                        color={
-                          selected.approve
-                            ? "success"
-                            : "warning"
-                        }
+                        color={selected.approve ? "success" : "warning"}
                         size="small"
+                        sx={{ fontWeight: 600, borderRadius: 1.5 }}
                       />
                     </Box>
+
                     <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Evidence
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom display="block">
+                        AMOUNT CLAIMED
                       </Typography>
-                      {selected.evidence && (
-                        <img
+                      <Typography variant="h6" fontWeight={700} color="#0f172a">
+                        {Number.isFinite(Number(selected.amount)) && Number(selected.amount) > 0
+                          ? `Rp ${Number(selected.amount).toLocaleString("id-ID")}`
+                          : "Rp 0"}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600} gutterBottom display="block">
+                        EVIDENCE DOCUMENT
+                      </Typography>
+                      {selected.evidence ? (
+                        <Box
+                          component="img"
                           src={selected.evidence}
                           alt="evidence"
-                          style={{ width: "100%", marginTop: 8, borderRadius: 8 }}
+                          sx={{
+                            width: "100%",
+                            maxHeight: 300,
+                            objectFit: "contain",
+                            mt: 1,
+                            borderRadius: 2,
+                            border: "1px solid #e2e8f0",
+                            backgroundColor: "#f1f5f9",
+                          }}
                         />
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">-</Typography>
                       )}
                     </Box>
                   </Box>
                 )}
-              </Box>
-            </Drawer>
-          </>
-        )}
-
+              </Drawer>
+            </>
+          )}
+        </Box>
       </Box>
     </Box>
   );

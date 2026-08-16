@@ -31,7 +31,6 @@ html, body, #root {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
   min-height: 100vh;
   background-color: #ffffff;
 }
@@ -96,19 +95,6 @@ table thead td::after,
   bottom: -1px;
   height: 1px;
   background: rgba(0,0,0,0.06);
-}
-
-/* Hide scrollbars visually but keep scroll functionality */
-/* Page-level: disable page scrolling and hide scrollbar */
-html, body {
-  overflow: hidden; /* prevent page-level scrolling */
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-  width: 0;
-  height: 0;
 }
 
 /* Utility class for hiding scrollbars on scrollable containers (e.g., table wrappers) */

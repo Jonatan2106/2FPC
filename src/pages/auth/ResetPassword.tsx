@@ -1,6 +1,16 @@
 import React from "react";
-import { Box, Typography, TextField, Button, Link, Alert } from "@mui/material";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Link as MuiLink,
+  Alert,
+  Card,
+  CardContent,
+} from "@mui/material";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { ArrowBack } from "@mui/icons-material";
 
 const ResetPassword: React.FC = () => {
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -16,7 +26,8 @@ const ResetPassword: React.FC = () => {
     "Content-Type": "application/json",
   });
   
-  const handleReset = async () => {
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (password !== confirmPassword) {
       setStatus({ type: 'error', msg: "Passwords do not match!" });
       return;
@@ -40,46 +51,131 @@ const ResetPassword: React.FC = () => {
         setStatus({ type: 'error', msg: result.message || "Failed to reset password" });
       }
     } catch (error) {
+      console.error(error);
       setStatus({ type: 'error', msg: "Network error, please try again later." });
     }
   };
 
   return (
-    <Box sx={{ width: "100%", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", bgcolor: "#ffffff", px: 2 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" color="textPrimary">2FPC</Typography>
-      </Box>
-
-      <Box sx={{ width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", gap: 2 }}>
-        <Typography textAlign="center" variant="h6">Reset Password</Typography>
-        <Typography textAlign="center" variant="body2" color="textSecondary">
-          Resetting password for: <b>{email}</b>
+    <Box
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "#f8fafc",
+        px: 2,
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Logo / branding */}
+      <Box sx={{ mb: 3, textAlign: "center" }}>
+        <Typography variant="h4" fontWeight={700} color="#0f172a">
+          2FPC
         </Typography>
-
-        {status && <Alert severity={status.type}>{status.msg}</Alert>}
-
-        <TextField
-          label="New Password"
-          type="password"
-          fullWidth
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <TextField
-          label="Confirm Password"
-          type="password"
-          fullWidth
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-
-        <Button variant="contained" size="large" onClick={handleReset} disabled={!email}>
-          Reset Password
-        </Button>
-
-        <Link href="/login" textAlign="center">Back to login</Link>
       </Box>
+
+      {/* Main Container Card */}
+      <Card
+        elevation={0}
+        sx={{
+          width: "100%",
+          maxWidth: 420,
+          borderRadius: 3,
+          border: "1px solid #e2e8f0",
+          bgcolor: "#ffffff",
+          p: { xs: 2, sm: 3 },
+        }}
+      >
+        <CardContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            p: 0,
+            "&:last-child": { pb: 0 },
+          }}
+        >
+          <Box sx={{ textAlign: "center", mb: 1 }}>
+            <Typography variant="h5" fontWeight={700} color="#0f172a" gutterBottom>
+              Reset Password 🔒
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Resetting password for: <Box component="span" fontWeight={600} color="#0f172a">{email || "Unknown"}</Box>
+            </Typography>
+          </Box>
+
+          {status && (
+            <Alert severity={status.type} sx={{ borderRadius: 2 }}>
+              {status.msg}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleReset} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="New Password"
+              type="password"
+              fullWidth
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              InputProps={{
+                sx: { borderRadius: 2 },
+              }}
+            />
+
+            <TextField
+              label="Confirm Password"
+              type="password"
+              fullWidth
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              InputProps={{
+                sx: { borderRadius: 2 },
+              }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={!email}
+              sx={{
+                py: 1.4,
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: "none",
+                bgcolor: "#2563eb",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+              }}
+            >
+              Reset Password
+            </Button>
+          </Box>
+
+          <Box sx={{ textAlign: "center", mt: 1 }}>
+            <MuiLink
+              component={Link}
+              to="/login"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 1,
+                fontWeight: 600,
+                color: "#64748b",
+                textDecoration: "none",
+                fontSize: "0.9rem",
+                "&:hover": { color: "#0f172a" },
+              }}
+            >
+              <ArrowBack sx={{ fontSize: 16 }} /> Back to login
+            </MuiLink>
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

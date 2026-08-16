@@ -216,7 +216,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
       payroll_period_end: period.end,
       payroll_cutoff_days: payrollCutoffDay,
       breakdown: payrollComputation.breakdown,
-      paidAt: referenceDate,
+      paidAt: null,
     };
 
     const payrollData = existingPayroll
@@ -224,7 +224,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
       : await Payroll.create(payload);
 
     return res.status(201).json({
-      message: "Payroll generated",
+      message: "Payroll generated as unpaid",
       data: {
         ...mapPayrollRecord(payrollData),
         user_id,
@@ -240,6 +240,8 @@ export const generatePayroll = async (req: Request, res: Response) => {
         payroll_period_label: period.label,
         payroll_period_key: period.key,
         payroll_cutoff_days: payrollCutoffDay,
+        paidAt: payrollData.paidAt ?? null,
+        payment_status: payrollData.paidAt ? "paid" : "unpaid",
         breakdown: payrollComputation.breakdown,
       },
     });
@@ -270,19 +272,26 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
       },
     });
 
+    const targetUser = await User.findByPk(userId);
+    const baseSalary = targetUser?.salary ?? 0;
+
     if (!payrollRecord) {
-      const targetUser = await User.findByPk(userId);
       return res.status(200).json({
         message: "Payroll not found for selected period",
         data: {
           hasPayroll: false,
           user_id: userId,
           staff_name: targetUser?.name ?? null,
+          base_salary: baseSalary,
+          total_income: baseSalary,
+          payment_status: "unpaid",
+          paidAt: null,
           payroll_period_key: period.key,
           payroll_period_label: period.label,
           payroll_period_start: period.start,
           payroll_period_end: period.end,
           payroll_cutoff_days: payrollCutoffDay,
+          breakdown: [],
         },
       });
     }
@@ -292,10 +301,52 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
       data: {
         hasPayroll: true,
         ...mapPayrollRecord(payrollRecord),
+        base_salary: payrollRecord.base_salary ?? baseSalary,
+        payment_status: payrollRecord.paidAt ? "paid" : "unpaid",
+        paidAt: payrollRecord.paidAt ?? null,
       },
     });
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch payroll summary", error });
+  }
+};
+
+export const markPayrollPaid = async (req: Request, res: Response) => {
+  try {
+    const { user_id, pay_date } = req.body as { user_id?: string; pay_date?: string };
+
+    if (!user_id) {
+      return res.status(400).json({ message: "user_id is required" });
+    }
+
+    const referenceDate = pay_date ? toValidDate(pay_date) : new Date();
+    if (!referenceDate) {
+      return res.status(400).json({ message: "pay_date is invalid" });
+    }
+
+    const period = getPayrollPeriod(referenceDate, referenceDate.getDate());
+    const payrollRecord = await Payroll.findOne({
+      where: {
+        user_id,
+        payroll_period_key: period.key,
+      },
+    });
+
+    if (!payrollRecord) {
+      return res.status(404).json({ message: "Payroll record not found for this period" });
+    }
+
+    const updatedPayroll = await payrollRecord.update({ paidAt: new Date() });
+    return res.status(200).json({
+      message: "Payroll marked as paid",
+      data: {
+        ...mapPayrollRecord(updatedPayroll),
+        payment_status: "paid",
+        paidAt: updatedPayroll.paidAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to mark payroll as paid", error });
   }
 };
 

@@ -1,6 +1,16 @@
 import React from "react";
-import { Box, Typography, TextField, Button, Link, CircularProgress, Alert } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Link as MuiLink,
+  CircularProgress,
+  Alert,
+  Card,
+  CardContent,
+} from "@mui/material";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const Login: React.FC = () => {
@@ -11,12 +21,12 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   
-  // Format dan bersihkan URL agar tidak pernah menjadi URL relatif Netlify
   const envUrl = (import.meta.env.VITE_API_BASE_URL || "https://twofpc.onrender.com").trim();
   const cleanBaseUrl = envUrl.startsWith("http") ? envUrl : `https://${envUrl.replace(/^\/+/, "")}`;
   const API_BASE_URL = `${cleanBaseUrl.replace(/\/$/, "")}/api/web`;
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!username || !password) {
       setError("Username and password are required");
       return;
@@ -40,11 +50,12 @@ const Login: React.FC = () => {
       const data = await response.json();
 
       if (response.ok && data.message === "Login success") {
+        // Objek user dikembalikan ke bentuk semula yang sederhana
         const userData = {
           user_id: data.data.user_id,
           name: data.data.name,
           email: data.data.email,
-          password: "", // never store password
+          password: "", 
           alamat: data.data.alamat || "",
           nomor_telepon: data.data.nomor_telepon || "",
           foto: data.data.foto || null,
@@ -53,7 +64,6 @@ const Login: React.FC = () => {
         };
 
         localStorage.setItem("authToken", data.data.token);
-
         login(userData, data.data.token);
 
         navigate("/");
@@ -77,61 +87,115 @@ const Login: React.FC = () => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#ffffff",
+        bgcolor: "#f8fafc",
         px: 2,
         boxSizing: "border-box",
       }}
     >
-      {/* Logo / branding */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" color="textPrimary">
+      <Box sx={{ mb: 3, textAlign: "center" }}>
+        <Typography variant="h4" fontWeight={700} color="#0f172a">
           2FPC
         </Typography>
       </Box>
 
-      <Box
+      <Card
+        elevation={0}
         sx={{
           width: "100%",
-          maxWidth: 360,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
+          maxWidth: 420,
+          borderRadius: 3,
+          border: "1px solid #e2e8f0",
+          bgcolor: "#ffffff",
+          p: { xs: 2, sm: 3 },
         }}
       >
-        {error && <Alert severity="error">{error}</Alert>}
-
-        <TextField
-          label="Username"
-          type="text"
-          fullWidth
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoFocus
-          disabled={loading}
-        />
-
-        <TextField
-          label="Password"
-          type="password"
-          fullWidth
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={loading}
-        />
-
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleLogin}
-          disabled={loading}
+        <CardContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            p: 0,
+            "&:last-child": { pb: 0 },
+          }}
         >
-          {loading ? <CircularProgress size={24} /> : "Log in"}
-        </Button>
+          <Box sx={{ textAlign: "center", mb: 1 }}>
+            <Typography variant="h5" fontWeight={700} color="#0f172a" gutterBottom>
+              Welcome Back! 👋
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please sign in to your account to continue.
+            </Typography>
+          </Box>
 
-        <Link href="/forgot-password" textAlign="center">
-          Forgot your password?
-        </Link>
-      </Box>
+          {error && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box
+            component="form"
+            onSubmit={handleLogin}
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
+            <TextField
+              label="Username"
+              type="text"
+              fullWidth
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+              disabled={loading}
+              InputProps={{ sx: { borderRadius: 2 } }}
+            />
+
+            <TextField
+              label="Password"
+              type="password"
+              fullWidth
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              InputProps={{ sx: { borderRadius: 2 } }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              sx={{
+                py: 1.4,
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: "none",
+                bgcolor: "#2563eb",
+                boxShadow: "none",
+                "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+              }}
+            >
+              {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Log in"}
+            </Button>
+          </Box>
+
+          <Box sx={{ textAlign: "center", mt: 1 }}>
+            <MuiLink
+              component={Link}
+              to="/forgot-password"
+              sx={{
+                fontWeight: 600,
+                color: "#64748b",
+                textDecoration: "none",
+                fontSize: "0.9rem",
+                "&:hover": { color: "#2563eb" },
+              }}
+            >
+              Forgot your password?
+            </MuiLink>
+          </Box>
+        </CardContent>
+      </Card>
     </Box>
   );
 };

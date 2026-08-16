@@ -7,7 +7,10 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
 } from "@mui/material";
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import Navbar from "../../common/Navbar";
 
 interface Department {
@@ -39,7 +42,8 @@ const CreateUser: React.FC = () => {
   React.useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/departments`, {
+        // PERBAIKAN: Ubah dari /departments menjadi /departements
+        const response = await fetch(`${API_BASE_URL}/departements`, {
           headers: getHeaders(),
         });
         const data = await response.json();
@@ -106,86 +110,120 @@ const CreateUser: React.FC = () => {
         minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        bgcolor: "#ffffff",
-        px: 2,
+        bgcolor: "#f8fafc",
+        px: { xs: 2, sm: 3 },
+        py: { xs: 3, md: 5 },
         boxSizing: "border-box",
       }}
     >
-      {/* Branding */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold">
-          2FPC
-        </Typography>
-      </Box>
-      <Navbar/>
+      <Navbar />
 
-      {/* Form */}
       <Box
         sx={{
           width: "100%",
-          maxWidth: 360,
+          maxWidth: 480,
+          mx: "auto",
+          mt: 4,
           display: "flex",
           flexDirection: "column",
-          gap: 2,
+          gap: 3,
         }}
       >
-        <Typography textAlign="center" variant="h6" mb={1}>
-          Create New User
-        </Typography>
-
-        {error && <Alert severity="error">{error}</Alert>}
-        {success && <Alert severity="success">User created successfully!</Alert>}
-
-        <TextField
-          label="Full Name"
-          fullWidth
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoFocus
-          disabled={loading}
-        />
-
-        <TextField
-          select
-          label="Role"
-          fullWidth
-          value={role}
-          onChange={(e) => setRole(e.target.value as "Staff" | "Manager")}
-          disabled={loading}
+        <Card
+          elevation={0}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            backgroundColor: "#ffffff",
+            borderRadius: 3,
+            border: "1px solid #e2e8f0",
+          }}
         >
-          <MenuItem value="Staff">Staff</MenuItem>
-          <MenuItem value="Manager">Manager</MenuItem>
-        </TextField>
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+            <Box sx={{ mb: 4, textAlign: "center" }}>
+              <Typography variant="h4" fontWeight={700} color="#0f172a" gutterBottom>
+                Create New User 👤
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Add a new staff or manager account to the system
+              </Typography>
+            </Box>
 
-        <TextField
-          select
-          label="Department"
-          fullWidth
-          value={selectedDepartment}
-          onChange={(e) => setSelectedDepartment(e.target.value)}
-          disabled={loading || departmentsLoading}
-        >
-          <MenuItem value="">
-            <em>No Department</em>
-          </MenuItem>
-          {departments.map((dept) => (
-            <MenuItem key={dept.departement_id} value={dept.departement_id}>
-              {dept.company_name}
-            </MenuItem>
-          ))}
-        </TextField>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleCreateUser}
-          disabled={loading}
-        >
-          {loading ? <CircularProgress size={24} /> : "Create User"}
-        </Button>
+            {success && (
+              <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+                User created successfully!
+              </Alert>
+            )}
 
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <TextField
+                label="Full Name"
+                fullWidth
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+                disabled={loading}
+                InputProps={{ sx: { borderRadius: 2 } }}
+              />
+
+              <TextField
+                select
+                label="Role"
+                fullWidth
+                value={role}
+                onChange={(e) => setRole(e.target.value as "Staff" | "Manager")}
+                disabled={loading}
+                InputProps={{ sx: { borderRadius: 2 } }}
+              >
+                <MenuItem value="Staff">Staff</MenuItem>
+                <MenuItem value="Manager">Manager</MenuItem>
+              </TextField>
+
+              <TextField
+                select
+                label="Department"
+                fullWidth
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                disabled={loading || departmentsLoading}
+                InputProps={{ sx: { borderRadius: 2 } }}
+              >
+                <MenuItem value="">
+                  <em>No Department</em>
+                </MenuItem>
+                {departments.map((dept) => (
+                  <MenuItem key={dept.departement_id} value={dept.departement_id}>
+                    {dept.company_name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleCreateUser}
+                disabled={loading}
+                startIcon={!loading ? <PersonAddIcon /> : undefined}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  bgcolor: "#2563eb",
+                  boxShadow: "none",
+                  "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                }}
+              >
+                {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Create User"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );

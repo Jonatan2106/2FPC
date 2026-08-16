@@ -12,7 +12,17 @@ import {
   CircularProgress,
   Alert,
   IconButton,
+  Card,
+  CardContent,
+  Chip,
 } from "@mui/material";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ArrowBack,
+  AccessTime,
+  CalendarMonth,
+} from "@mui/icons-material";
 import Navbar from "../../common/Navbar";
 
 type AttendanceRecord = {
@@ -125,7 +135,6 @@ const ViewAttendance: React.FC = () => {
     void fetchAttendance();
   }, []);
 
-  // Group records by date (yyyy-MM-dd)
   const recordsByDate = React.useMemo(() => {
     const map = new Map<string, AttendanceRecord[]>();
     data.forEach((rec) => {
@@ -171,7 +180,6 @@ const ViewAttendance: React.FC = () => {
   };
 
   const handleDayClick = (day: Date) => {
-    // Toggle detail panel: click same date again to close.
     if (selectedDate && sameDay(day, selectedDate)) {
       setSelectedDate(null);
       return;
@@ -183,110 +191,261 @@ const ViewAttendance: React.FC = () => {
   const selectedAttendances = selectedKey ? recordsByDate.get(selectedKey) ?? [] : [];
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: '#ffffff', px: 2, py: 4 }}>
+    <Box
+      sx={{
+        width: "100%",
+        minHeight: "100vh",
+        height: "100%",
+        bgcolor: "#f8fafc",
+        overflowY: "auto",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Navbar />
-      <Typography variant="h5" fontWeight={600} mb={3}>Attendance Calendar</Typography>
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" py={4}><CircularProgress /></Box>
-      ) : (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            gap: 2,
-            alignItems: 'flex-start'
-          }}
-        >
-          {/* Calendar column */}
-          <Box
-            sx={{
-              flex: 1,
-              width: '100%',
-              maxWidth: { xs: '100%', md: selectedDate ? '68%' : '100%' },
-              transition: 'max-width 300ms ease, transform 300ms ease',
-              transform: { xs: 'none', md: selectedDate ? 'translateX(-12px)' : 'translateX(0)' }
-            }}
+      <Box
+        sx={{
+          maxWidth: 1200,
+          width: "100%",
+          mx: "auto",
+          px: { xs: 2, sm: 3 },
+          py: 4,
+          flex: 1,
+        }}
+      >
+        {/* Header Section */}
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h4"
+            fontWeight={700}
+            color="#0f172a"
+            gutterBottom
+            sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
           >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Box>
-                <IconButton onClick={handlePrev} size="small" sx={{ color: '#111' }}>◀</IconButton>
-                <IconButton onClick={handleNext} size="small" sx={{ color: '#111' }}>▶</IconButton>
-              </Box>
-              <Typography variant="h6" sx={{ color: '#111' }}>{monthLabel}</Typography>
-            </Box>
+            Attendance Calendar 📅
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Monitor daily employee attendance records and history.
+          </Typography>
+        </Box>
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0.75 }}>
-              {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map((d) => (
-                <Box
-                  key={d}
-                  sx={{
-                    textAlign: 'center',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    color: '#111',
-                    backgroundColor: 'transparent',
-                    py: 0.5
-                  }}
-                >
-                  {d}
-                </Box>
-              ))}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-              {calendarCells.map((day, idx) => {
-                if (!day) {
-                  return <Box key={`empty-${idx}`} sx={{ minHeight: 56 }} />;
-                }
-
-                const key = toDateKey(day);
-                const has = recordsByDate.has(key);
-                const isSelected = selectedDate ? sameDay(day, selectedDate) : false;
-
-                return (
-                  <Box
-                    key={key}
-                    onClick={() => handleDayClick(day)}
-                    sx={{
-                      border: '1px solid #d9d9d9',
-                      p: 0.75,
-                      minHeight: 56,
-                      cursor: 'pointer',
-                      backgroundColor: isSelected ? '#111' : '#fff',
-                      color: isSelected ? '#fff' : '#111',
-                      position: 'relative'
-                    }}
-                  >
-                    <Typography sx={{ fontSize: 14, lineHeight: 1.1 }}>{day.getDate()}</Typography>
-                    {has && <Box sx={{ position: 'absolute', top: 4, right: 4, bgcolor: isSelected ? '#fff' : '#111', color: isSelected ? '#111' : '#fff', px: 0.5, borderRadius: 1, fontSize: 10, lineHeight: 1 }}>•</Box>}
-                  </Box>
-                );
-              })}
-            </Box>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={8}>
+            <CircularProgress sx={{ color: "#2563eb" }} />
           </Box>
-
-          {/* Detail panel */}
+        ) : (
           <Box
             sx={{
-              width: { xs: '100%', md: selectedDate ? 360 : 0 },
-              overflow: 'visible',
-              transition: 'width 300ms ease'
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              gap: 3,
+              alignItems: "flex-start",
             }}
           >
-            {selectedDate && (
-              <Paper
+            {/* Calendar Card Container (Sekarang dibuat lebih kecil/fix ukurannya) */}
+            <Card
+              elevation={0}
+              sx={{
+                width: { xs: "100%", md: "400px" },
+                flexShrink: 0,
+                borderRadius: 3,
+                border: "1px solid #e2e8f0",
+                bgcolor: "#ffffff",
+                p: { xs: 2, sm: 3 },
+              }}
+            >
+              {/* Month Navigation Control */}
+              <Box
                 sx={{
-                  p: 1.5,
-                  width: '100%',
-                  maxWidth: { xs: '100%', md: 360 },
-                  border: '1px solid #111',
-                  boxSizing: 'border-box'
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 3,
+                  px: 1,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <IconButton size="small" onClick={() => setSelectedDate(null)} sx={{ color: '#111' }}>←</IconButton>
-                  <Typography variant="h6">
+                <Typography variant="h6" fontWeight={700} color="#1e293b">
+                  {monthLabel}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <IconButton
+                    onClick={handlePrev}
+                    size="small"
+                    sx={{
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 2,
+                      color: "#334155",
+                      "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8" },
+                    }}
+                  >
+                    <ChevronLeft fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    onClick={handleNext}
+                    size="small"
+                    sx={{
+                      border: "1px solid #cbd5e1",
+                      borderRadius: 2,
+                      color: "#334155",
+                      "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8" },
+                    }}
+                  >
+                    <ChevronRight fontSize="small" />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* Days Header */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  gap: 1,
+                  mb: 1,
+                }}
+              >
+                {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((d) => (
+                  <Box
+                    key={d}
+                    sx={{
+                      textAlign: "center",
+                      fontWeight: 600,
+                      fontSize: "0.85rem",
+                      color: "#64748b",
+                      py: 1,
+                    }}
+                  >
+                    {d}
+                  </Box>
+                ))}
+              </Box>
+
+              {/* Calendar Grid */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(7, 1fr)",
+                  gap: 1,
+                }}
+              >
+                {calendarCells.map((day, idx) => {
+                  if (!day) {
+                    return <Box key={`empty-${idx}`} sx={{ minHeight: 48 }} />;
+                  }
+
+                  const key = toDateKey(day);
+                  const has = recordsByDate.has(key);
+                  const isSelected = selectedDate ? sameDay(day, selectedDate) : false;
+
+                  return (
+                    <Box
+                      key={key}
+                      onClick={() => handleDayClick(day)}
+                      sx={{
+                        border: isSelected ? "2px solid #2563eb" : "1px solid #e2e8f0",
+                        borderRadius: 2,
+                        p: 1,
+                        minHeight: 48,
+                        cursor: "pointer",
+                        backgroundColor: isSelected ? "#eff6ff" : "#ffffff",
+                        color: isSelected ? "#1d4ed8" : "#1e293b",
+                        position: "relative",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-between",
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                          borderColor: "#2563eb",
+                          bgcolor: isSelected ? "#eff6ff" : "#f8fafc",
+                        },
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontSize: "0.85rem",
+                          fontWeight: isSelected ? 700 : 500,
+                        }}
+                      >
+                        {day.getDate()}
+                      </Typography>
+                      {has && (
+                        <Box
+                          sx={{
+                            alignSelf: "flex-end",
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            bgcolor: isSelected ? "#2563eb" : "#059669",
+                          }}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Card>
+
+            {/* Detail Panel Card (Sekarang dibuat flex: 1 / melebar) */}
+            {selectedDate && (
+              <Card
+                elevation={0}
+                sx={{
+                  flex: 1,
+                  width: "100%",
+                  borderRadius: 3,
+                  border: "1px solid #e2e8f0",
+                  bgcolor: "#ffffff",
+                  p: 3,
+                  boxSizing: "border-box",
+                }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    mb: 2.5,
+                    pb: 1.5,
+                    borderBottom: "1px solid #f1f5f9",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => setSelectedDate(null)}
+                      sx={{
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 2,
+                        color: "#334155",
+                        "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8" },
+                      }}
+                    >
+                      <ArrowBack fontSize="small" />
+                    </IconButton>
+                    <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+                      Attendance Details
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: 2.5,
+                    color: "text.secondary",
+                  }}
+                >
+                  <CalendarMonth sx={{ fontSize: 18, color: "#2563eb" }} />
+                  <Typography variant="body2" fontWeight={600}>
                     {selectedDate.toLocaleDateString("id-ID", {
                       day: "2-digit",
                       month: "long",
@@ -295,45 +454,77 @@ const ViewAttendance: React.FC = () => {
                   </Typography>
                 </Box>
 
-                <TableContainer>
-                  <Table size="small">
+                <TableContainer
+                  sx={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 2,
+                    maxHeight: "500px", // Diperbesar agar muat banyak saat layarnya lebar
+                  }}
+                >
+                  <Table size="small" stickyHeader>
                     <TableHead>
                       <TableRow>
-                        <TableCell><b>Name</b></TableCell>
-                        <TableCell><b>Department</b></TableCell>
-                        <TableCell><b>Time</b></TableCell>
+                        <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>
+                          Name
+                        </TableCell>
+                        <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>
+                          Department
+                        </TableCell>
+                        <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>
+                          Time
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {selectedAttendances.length > 0 ? (
                         selectedAttendances.map((r) => (
-                          <TableRow key={r.attendance_id}>
+                          <TableRow key={r.attendance_id} sx={{ "&:hover": { bgcolor: "#f8fafc" } }}>
                             <TableCell>
-                              <Typography fontWeight={600}>{r.user?.name ?? r.user_id}</Typography>
+                              <Typography variant="body2" fontWeight={600} color="#0f172a">
+                                {r.user?.name ?? r.user_id}
+                              </Typography>
                             </TableCell>
-                            <TableCell>{r.user?.departement ?? '-'}</TableCell>
                             <TableCell>
-                              {formatTimeOnly(r.clock_in)}
-                              {r.clock_out ? ` - ${formatTimeOnly(r.clock_out)}` : ""}
+                              <Typography variant="body2" color="text.secondary">
+                                {r.user?.departement ?? "-"}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                icon={<AccessTime sx={{ fontSize: "14px !important" }} />}
+                                label={`${formatTimeOnly(r.clock_in)}${
+                                  r.clock_out ? ` - ${formatTimeOnly(r.clock_out)}` : ""
+                                }`}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderRadius: 1.5,
+                                  fontSize: "0.75rem",
+                                  color: "#0f172a",
+                                  borderColor: "#e2e8f0",
+                                  bgcolor: "#f8fafc",
+                                }}
+                              />
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} align="center">
-                            Tidak ada data absensi pada tanggal ini.
+                          <TableCell colSpan={3} align="center" sx={{ py: 4 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Tidak ada data absensi pada tanggal ini.
+                            </Typography>
                           </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </TableContainer>
-
-              </Paper>
+              </Card>
             )}
           </Box>
-        </Box>
-      )}
+        )}
+      </Box>
     </Box>
   );
 };

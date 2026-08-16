@@ -12,7 +12,12 @@ import {
   Drawer,
   CircularProgress,
   Alert,
+  Card,
+  CardContent,
+  TableContainer,
+  IconButton,
 } from "@mui/material";
+import { Close, CheckCircle, Cancel, Visibility, CalendarMonth } from "@mui/icons-material";
 
 import type { LeaveManagements } from "../../types/leave_management";
 import Navbar from "../../common/Navbar";
@@ -132,229 +137,301 @@ const LeaveManagement: React.FC = () => {
       sx={{
         width: "100%",
         minHeight: "100vh",
-        bgcolor: "#ffffff",
+        bgcolor: "#f8fafc",
         display: "flex",
-        justifyContent: "center",
-        px: 2,
-        py: 4,
+        flexDirection: "column",
       }}
     >
-      <Navbar/>
-      <Box sx={{ width: "100%", maxWidth: 1000 }}>
-        <Typography variant="h5" fontWeight={600} mb={3}>
-          Leave Requests
-        </Typography>
+      <Navbar />
 
-        {/* View Leave Button */}
-        <Box sx={{ mb: 3 }}>
+      <Box
+        sx={{
+          maxWidth: 1200,
+          width: "100%",
+          mx: "auto",
+          px: { xs: 2, sm: 3 },
+          py: 4,
+          flex: 1,
+        }}
+      >
+        {/* Header Section */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            justifyContent: "space-between",
+            alignItems: { xs: "flex-start", sm: "center" },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h4" fontWeight={700} color="#0f172a">
+              Leave Management 🌴
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+              Review and manage employee leave requests.
+            </Typography>
+          </Box>
+
           <Button
             variant="contained"
-            onClick={() => window.location.href = "/leave-view"}
+            onClick={() => (window.location.href = "/leave-view")}
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 600,
+              bgcolor: "#2563eb",
+              boxShadow: "none",
+              "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+            }}
           >
-            View List of Leave Management Approved
+            View Approved Leaves
           </Button>
         </Box>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         {loading ? (
-          <Box display="flex" justifyContent="center" py={4}>
-            <CircularProgress />
+          <Box display="flex" justifyContent="center" py={8}>
+            <CircularProgress sx={{ color: "#2563eb" }} />
           </Box>
         ) : (
-          <>
-            <Box
-              className="table-limited-5 hide-scrollbar"
-              sx={{
-                border: "1px solid #e0e0e0",
-                borderRadius: 2,
-                backgroundColor: "#fff",
-              }}
-            >
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 3,
+              border: "1px solid #e2e8f0",
+              bgcolor: "#ffffff",
+              overflow: "hidden",
+            }}
+          >
+            <TableContainer>
               <Table stickyHeader>
-                <TableHead sx={{ position: "sticky", top: 0, zIndex: 5 }}>
-                  <TableRow sx={{ backgroundColor: "#fafafa" }}>
-                    <TableCell><b>Staff</b></TableCell>
-                    <TableCell><b>Reason</b></TableCell>
-                    <TableCell><b>Status</b></TableCell>
-                    <TableCell><b>Created At</b></TableCell>
-                    <TableCell><b>Approved At</b></TableCell>
-                    <TableCell align="right"><b>Actions</b></TableCell>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>Staff</TableCell>
+                    <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>Reason</TableCell>
+                    <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>Status</TableCell>
+                    <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>Created At</TableCell>
+                    <TableCell sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>Approved At</TableCell>
+                    <TableCell align="right" sx={{ bgcolor: "#f8fafc", fontWeight: 700, color: "#475569" }}>
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
 
                 <TableBody>
-                  {data.map((l) => (
-                    <TableRow
-                      key={l.leave_id}
-                      hover
-                      sx={{ cursor: "pointer" }}
-                      onClick={() => setSelected(l)}
-                    >
-                      <TableCell>
-                        <div>{l.user?.name ?? l.user_id}</div>
-                        <div style={{ fontSize: 12, color: '#666' }}>{l.user?.departement ?? ''}</div>
-                      </TableCell>
+                  {data.length > 0 ? (
+                    data.map((l) => (
+                      <TableRow
+                        key={l.leave_id}
+                        hover
+                        sx={{ cursor: "pointer", "&:hover": { bgcolor: "#f8fafc" } }}
+                        onClick={() => setSelected(l)}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600} color="#0f172a">
+                            {l.user?.name ?? l.user_id}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {l.user?.departement ?? "-"}
+                          </Typography>
+                        </TableCell>
 
-                      <TableCell>
-                        {l.reason || "-"}
-                      </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200, truncate: true }}>
+                            {l.reason || "-"}
+                          </Typography>
+                        </TableCell>
 
-                      <TableCell>
-                        <Chip
-                          label={l.cuti ? "APPROVED" : "PENDING"}
-                          color={
-                            l.cuti
-                              ? "success"
-                              : "warning"
-                          }
-                          size="small"
-                        />
-                      </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={l.cuti ? "APPROVED" : "PENDING"}
+                            color={l.cuti ? "success" : "warning"}
+                            size="small"
+                            sx={{ borderRadius: 1.5, fontWeight: 600, fontSize: "0.7rem" }}
+                          />
+                        </TableCell>
 
-                      <TableCell>
-                        {new Date(l.createdAt).toLocaleDateString()}
-                      </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(l.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
 
-                      <TableCell>
-                        {l.approvedAt
-                          ? new Date(l.approvedAt).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {l.approvedAt ? new Date(l.approvedAt).toLocaleDateString() : "-"}
+                          </Typography>
+                        </TableCell>
 
-                      <TableCell align="right">
-                        {!l.cuti && (
-                          <>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              sx={{ mr: 1 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApprove(l.leave_id);
-                              }}
-                              disabled={actionLoading}
-                            >
-                              Approve
-                            </Button>
-
+                        <TableCell align="right">
+                          <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+                            {!l.cuti && (
+                              <>
+                                <Button
+                                  size="small"
+                                  variant="contained"
+                                  color="success"
+                                  onClick={() => handleApprove(l.leave_id)}
+                                  disabled={actionLoading}
+                                  sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, boxShadow: "none" }}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  color="error"
+                                  onClick={() => handleReject(l.leave_id)}
+                                  disabled={actionLoading}
+                                  sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="small"
                               variant="outlined"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReject(l.leave_id);
-                              }}
-                              disabled={actionLoading}
+                              onClick={() => setSelected(l)}
+                              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, borderColor: "#cbd5e1", color: "#334155" }}
                             >
-                              Reject
+                              View
                             </Button>
-                          </>
-                        )}
-
-                        <Button
-                          size="small"
-                          sx={{ ml: 1 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelected(l);
-                          }}
-                        >
-                          View
-                        </Button>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No leave requests found.
+                        </Typography>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
-            </Box>
-
-            <Drawer
-              anchor="right"
-              open={!!selected}
-              onClose={() => setSelected(null)}
-            >
-              <Box sx={{ width: 400, p: 3 }}>
-                {selected && (
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <Typography variant="h6">Leave Details</Typography>
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Leave ID
-                      </Typography>
-                      <Typography>{selected.leave_id}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Staff
-                      </Typography>
-                      <Typography>{selected.user?.name ?? selected.user_id}</Typography>
-                      <Typography variant="caption" color="text.secondary">{selected.user?.departement ?? ''}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Status
-                      </Typography>
-                      <Chip
-                        label={selected.cuti ? "APPROVED" : "PENDING"}
-                        color={
-                          selected.cuti
-                            ? "success"
-                            : "warning"
-                        }
-                        size="small"
-                      />
-                    </Box>
-                    {selected.reason && (
-                      <Box>
-                        <Typography variant="body2" color="textSecondary">
-                          Reason
-                        </Typography>
-                        <Typography>{selected.reason}</Typography>
-                      </Box>
-                    )}
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Created At
-                      </Typography>
-                      <Typography>{new Date(selected.createdAt).toLocaleString()}</Typography>
-                    </Box>
-                    {selected.approvedAt && (
-                      <Box>
-                        <Typography variant="body2" color="textSecondary">
-                          Approved At
-                        </Typography>
-                        <Typography>{new Date(selected.approvedAt).toLocaleString()}</Typography>
-                      </Box>
-                    )}
-                    {!selected.cuti && (
-                      <Box mt={3} display="flex" gap={1}>
-                        <Button
-                          variant="contained"
-                          onClick={() => handleApprove(selected.leave_id)}
-                          disabled={actionLoading}
-                        >
-                          Approve
-                        </Button>
-
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          onClick={() => handleReject(selected.leave_id)}
-                          disabled={actionLoading}
-                        >
-                          Reject
-                        </Button>
-                      </Box>
-                    )}
-                  </Box>
-                )}
-              </Box>
-            </Drawer>
-          </>
+            </TableContainer>
+          </Card>
         )}
 
+        {/* Detail Drawer */}
+        <Drawer
+          anchor="right"
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          PaperProps={{
+            sx: { width: { xs: "100%", sm: 420 }, p: 3, boxSizing: "border-box" },
+          }}
+        >
+          {selected && (
+            <Box display="flex" flexDirection="column" gap={3} height="100%">
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="h6" fontWeight={700} color="#0f172a">
+                  Leave Details
+                </Typography>
+                <IconButton size="small" onClick={() => setSelected(null)}>
+                  <Close fontSize="small" />
+                </IconButton>
+              </Box>
+
+              <Box display="flex" flexDirection="column" gap={2.5} flex={1}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    LEAVE ID
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} color="#0f172a">
+                    {selected.leave_id}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    STAFF INFORMATION
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700} color="#0f172a">
+                    {selected.user?.name ?? selected.user_id}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selected.user?.departement ?? "No Department"}
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    STATUS
+                  </Typography>
+                  <Box sx={{ mt: 0.5 }}>
+                    <Chip
+                      label={selected.cuti ? "APPROVED" : "PENDING"}
+                      color={selected.cuti ? "success" : "warning"}
+                      size="small"
+                      sx={{ borderRadius: 1.5, fontWeight: 600 }}
+                    />
+                  </Box>
+                </Box>
+
+                {selected.reason && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      REASON
+                    </Typography>
+                    <Typography variant="body2" color="#0f172a" sx={{ mt: 0.5, p: 1.5, bgcolor: "#f8fafc", borderRadius: 2, border: "1px solid #e2e8f0" }}>
+                      {selected.reason}
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                    TIMELINE
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Created: {new Date(selected.createdAt).toLocaleString()}
+                  </Typography>
+                  {selected.approvedAt && (
+                    <Typography variant="body2" color="text.secondary">
+                      Decision Date: {new Date(selected.approvedAt).toLocaleString()}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+
+              {!selected.cuti && (
+                <Box display="flex" gap={2} pt={2} borderTop="1px solid #e2e8f0">
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="success"
+                    onClick={() => handleApprove(selected.leave_id)}
+                    disabled={actionLoading}
+                    sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600, boxShadow: "none" }}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleReject(selected.leave_id)}
+                    disabled={actionLoading}
+                    sx={{ borderRadius: 2, textTransform: "none", fontWeight: 600 }}
+                  >
+                    Reject
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Drawer>
       </Box>
     </Box>
   );

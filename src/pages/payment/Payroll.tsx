@@ -12,6 +12,7 @@ import {
 import Navbar from '../../common/Navbar';
 
 type PayrollSummary = {
+  user_id?: string;
   staff_name?: string;
   base_salary?: number;
   total_penalty?: number;
@@ -20,6 +21,7 @@ type PayrollSummary = {
   leave_deduction?: number;
   final_salary?: number;
   payroll_period_label?: string;
+  payment_status?: 'paid' | 'unpaid';
 };
 
 const formatCurrency = (value: number) =>
@@ -76,15 +78,51 @@ const Payroll: React.FC = () => {
     }
   };
 
+  const handleMarkPaid = async () => {
+    if (!staffName.trim()) {
+      setError('Staff name is required');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/payroll/pay`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ user_id: payrollData?.user_id ?? staffName.trim(), pay_date: payDate }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to mark payroll as paid');
+      }
+
+      setPayrollData((current) => ({
+        ...current,
+        ...result.data,
+        payment_status: 'paid',
+      }));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An error occurred while marking payroll as paid';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#ffffff', p: { xs: 2, md: 4 } }}>
+    <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc', px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
       <Navbar />
-      <Box sx={{ maxWidth: 1080, mx: 'auto'}}>
+      <Box sx={{ maxWidth: { xs: '100%', md: 1040, lg: 1180 }, mx: 'auto', mt: 2 }}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.7fr 1fr' },
-            gap: 3,
+            gridTemplateColumns: { xs: '1fr', lg: '1.6fr 1fr' },
+            gap: { xs: 2, md: 3 },
+            alignItems: 'stretch',
           }}
         >
           {/* Left column: title + staff details */}
@@ -93,16 +131,16 @@ const Payroll: React.FC = () => {
               elevation={0}
               sx={{
                 backgroundColor: '#ffffff',
-                border: '1px solid rgba(145, 158, 171, 0.24)',
+                border: '1px solid #e2e8f0',
                 borderRadius: 3,
-                p: 3,
-                height: '100%'
+                p: { xs: 2, md: 3 },
+                height: '100%',
               }}
             >
               <Stack spacing={3} sx={{ height: '100%' }}>
                 <Box>
-                  <Typography variant="h4" fontWeight={700} color="text.primary" align="center">
-                    PAYROLL
+                  <Typography variant="h4" fontWeight={700} color="#0f172a" align="center">
+                    PAYROLL 💰
                   </Typography>
                   <Typography variant="body1" color="text.secondary" align="center" sx={{ mt: 1, maxWidth: 720, mx: 'auto' }}>
                     Calculate staff salary automatically and view the payment date. Enter staff name, base salary, penalty, reimbursement, and leave to see the net salary amount.
@@ -110,7 +148,7 @@ const Payroll: React.FC = () => {
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" fontWeight={700} mb={1}>
+                  <Typography variant="subtitle1" fontWeight={700} color="#0f172a" mb={1.5}>
                     Staff Details
                   </Typography>
 
@@ -119,6 +157,7 @@ const Payroll: React.FC = () => {
                     value={staffName}
                     onChange={(event) => setStaffName(event.target.value)}
                     fullWidth
+                    InputProps={{ sx: { borderRadius: 2 } }}
                     sx={{ mb: 2 }}
                   />
 
@@ -129,7 +168,8 @@ const Payroll: React.FC = () => {
                     onChange={(event) => setPayDate(event.target.value)}
                     InputLabelProps={{ shrink: true }}
                     fullWidth
-                    sx={{ mb: 2 }}
+                    InputProps={{ sx: { borderRadius: 2 } }}
+                    sx={{ mb: 2.5 }}
                   />
 
                   <Button
@@ -138,97 +178,140 @@ const Payroll: React.FC = () => {
                     disabled={loading}
                     fullWidth
                     size="large"
+                    sx={{
+                      py: 1.4,
+                      borderRadius: 2,
+                      fontWeight: 600,
+                      textTransform: "none",
+                      bgcolor: "#2563eb",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                    }}
                   >
                     {loading ? 'Generating...' : 'Generate Payroll'}
                   </Button>
 
-                  {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+                  {payrollData && payrollData.payment_status !== 'paid' && (
+                    <Button
+                      variant="outlined"
+                      color="success"
+                      onClick={handleMarkPaid}
+                      disabled={loading}
+                      fullWidth
+                      size="large"
+                      sx={{
+                        mt: 1.5,
+                        py: 1.4,
+                        borderRadius: 2,
+                        fontWeight: 600,
+                        textTransform: "none",
+                      }}
+                    >
+                      {loading ? 'Processing...' : 'Mark as Paid on 28'}
+                    </Button>
+                  )}
+
+                  {error && <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{error}</Alert>}
                 </Box>
               </Stack>
             </Paper>
           </Box>
 
-          {/* Right column: payroll summary (spans vertically) */}
+          {/* Right column: payroll summary */}
           <Box>
             <Paper
               elevation={0}
               sx={{
                 backgroundColor: '#ffffff',
-                border: '1px solid rgba(145, 158, 171, 0.24)',
+                border: '1px solid #e2e8f0',
                 borderRadius: 3,
-                p: 3,
-                minHeight: 360,
+                p: { xs: 2, md: 3 },
+                minHeight: { xs: 280, md: 360 },
               }}
             >
-              <Typography variant="subtitle1" fontWeight={700} mb={2} align="center">
+              <Typography variant="subtitle1" fontWeight={700} color="#0f172a" mb={2} align="center">
                 PAYROLL SUMMARY
               </Typography>
 
               {payrollData ? (
                 <Stack spacing={2}>
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Staff Name
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      STAFF NAME
                     </Typography>
-                    <Typography variant="body1">{payrollData.staff_name || '-'} </Typography>
+                    <Typography variant="body1" fontWeight={600} color="#0f172a">{payrollData.staff_name || '-'}</Typography>
                   </Box>
 
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Payment Date
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      PAYMENT DATE
                     </Typography>
-                    <Typography variant="body1">{payDate}</Typography>
+                    <Typography variant="body1" color="#0f172a">{payDate}</Typography>
                   </Box>
 
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Payroll Period
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      PAYROLL PERIOD
                     </Typography>
-                    <Typography variant="body1">{payrollData.payroll_period_label || '-'}</Typography>
-                  </Box>
-
-                  <Divider />
-
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Base Salary
-                    </Typography>
-                    <Typography variant="body1">{formatCurrency(payrollData.base_salary || 0)}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Penalty
-                    </Typography>
-                    <Typography variant="body1">-{formatCurrency(payrollData.total_penalty || 0)}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Reimburse
-                    </Typography>
-                    <Typography variant="body1">{formatCurrency(payrollData.total_reimburse || 0)}</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Leave Deduction ({payrollData.leave_days || 0} days)
-                    </Typography>
-                    <Typography variant="body1">-{formatCurrency(payrollData.leave_deduction || 0)}</Typography>
+                    <Typography variant="body1" color="#0f172a">{payrollData.payroll_period_label || '-'}</Typography>
                   </Box>
 
                   <Divider />
 
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Net Salary Total
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      CURRENT SALARY
                     </Typography>
-                    <Typography variant="h5" fontWeight={700} mt={1}>
+                    <Typography variant="body1" color="#0f172a">{formatCurrency(payrollData.base_salary || 0)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      PAYMENT STATUS
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: payrollData.payment_status === 'paid' ? 'success.main' : 'warning.main', fontWeight: 600 }}>
+                      {payrollData.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      PENALTY
+                    </Typography>
+                    <Typography variant="body1" color="error.main">-{formatCurrency(payrollData.total_penalty || 0)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      REIMBURSE
+                    </Typography>
+                    <Typography variant="body1" color="success.main">+{formatCurrency(payrollData.total_reimburse || 0)}</Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      LEAVE DEDUCTION ({payrollData.leave_days || 0} days)
+                    </Typography>
+                    <Typography variant="body1" color="error.main">-{formatCurrency(payrollData.leave_deduction || 0)}</Typography>
+                  </Box>
+
+                  <Divider />
+
+                  <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      NET SALARY TOTAL
+                    </Typography>
+                    <Typography variant="h5" fontWeight={700} color="#0f172a" mt={0.5}>
                       {formatCurrency(payrollData.final_salary || 0)}
                     </Typography>
                   </Box>
                 </Stack>
               ) : (
-                <Typography variant="body2" color="text.secondary">
-                  Enter staff name and click Generate Payroll to view summary.
-                </Typography>
+                <Box display="flex" alignItems="center" justifyContent="center" height="240px">
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    Enter staff name and click Generate Payroll to view summary.
+                  </Typography>
+                </Box>
               )}
             </Paper>
           </Box>

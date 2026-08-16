@@ -28,22 +28,45 @@ const resolveEffectiveRole = async (existingUser: User): Promise<EffectiveRole> 
   return staffDetail?.role === "Manager" ? "Manager" : "Staff";
 };
 
-const buildLoginPayload = (existingUser: User, role: EffectiveRole, token: string, qrData: string, qrImage: string, deviceId: string | null) => ({
-  user_id: existingUser.user_id,
-  name: existingUser.name,
-  email: existingUser.email,
-  alamat: existingUser.alamat,
-  nomor_telepon: existingUser.nomor_telepon,
-  foto: existingUser.foto,
-  type: existingUser.type,
-  role,
-  salary: existingUser.salary,
-  token,
-  qr_code: qrData,
-  qr_image: qrImage,
-  device_id: deviceId,
-  qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
-});
+const resolveEffectiveDepartment = async (userId: string): Promise<string> => {
+  const staffDetail = await StaffDetail.findOne({
+    where: { user_id: userId },
+    raw: true,
+    attributes: ["departement_name"],
+  });
+
+  // Mengembalikan nama departemen atau string kosong jika tidak ditemukan
+  return staffDetail?.departement_name ?? "";
+};
+
+const buildLoginPayload = async (existingUser: User, role: EffectiveRole, token: string, qrData: string, qrImage: string, deviceId: string | null) => {
+  const departmentName = await resolveEffectiveDepartment(existingUser.user_id);
+  const staffDetail = await StaffDetail.findOne({ where: { user_id: existingUser.user_id } });
+
+  return {
+    user_id: existingUser.user_id,
+    name: existingUser.name,
+    email: existingUser.email,
+    alamat: existingUser.alamat,
+    nomor_telepon: existingUser.nomor_telepon,
+    foto: existingUser.foto,
+    type: existingUser.type,
+    role,
+    salary: existingUser.salary,
+    department_id: staffDetail?.departement_id ?? null,
+    department_name: departmentName, // <-- Langsung bersih menggunakan fungsi penresolve
+    staff_detail: {
+      role,
+      departement_id: staffDetail?.departement_id ?? null,
+      departement_name: departmentName,
+    },
+    token,
+    qr_code: qrData,
+    qr_image: qrImage,
+    device_id: deviceId,
+    qr_expires_at: new Date(new Date().getTime() + 24 * 60 * 60 * 1000),
+  };
+};
 
 const getRequesterAccess = async (req: Request) => {
   const requesterId = req.headers["x-user-id"] as string | undefined;
@@ -70,6 +93,22 @@ const getRequesterAccess = async (req: Request) => {
     role: (requester?.staff_detail?.role === "Manager" ? "Manager" : "Staff") as StaffRole,
     departementId: requester?.staff_detail?.departement_id ?? null,
   };
+};
+
+const isHumanResourcesManager = async (departementId: string | null | undefined): Promise<boolean> => {
+  if (!departementId) {
+    return false;
+  }
+
+  const departement = await Departement.findByPk(departementId, {
+    attributes: ["company_name"],
+  });
+
+  const normalizedName = String(departement?.company_name || "")
+    .trim()
+    .toLowerCase();
+
+  return normalizedName === "human resources" || normalizedName === "hr";
 };
 
 const getDepartementDisplayName = async (departementId?: string | null): Promise<string | null> => {
@@ -166,7 +205,7 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
 
     return res.status(200).json({
       message: "Login success",
-      data: buildLoginPayload(existingUser, effectiveRole, token, qrData, qrImage, deviceId),
+      data: await buildLoginPayload(existingUser, effectiveRole, token, qrData, qrImage, deviceId),
     });
   } catch (error) {
     console.error("[handleLogin] Error:", error);
@@ -228,26 +267,52 @@ export const createStaffAccountAdmin = async (req: Request, res: Response) => {
 export const updateUserProfileAdmin = async (req: Request, res: Response) => {
   try {
     const userId = String(req.params.id);
+    const access = await getRequesterAccess(req);
+
+    if (!access) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const targetUser = await User.findByPk(userId);
     if (!targetUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const allowedFields = [
+    if (access.role !== "Admin") {
+      const targetStaff = await StaffDetail.findByPk(userId);
+      if (targetStaff?.departement_id !== access.departementId) {
+        return res.status(403).json({
+          message: "You can only modify users in your own department",
+        });
+      }
+    }
+
+    const canEditType = access.role === "Admin";
+
+    const allowedFields: string[] = [
       "name",
       "email",
       "alamat",
       "nomor_telepon",
       "foto",
       "salary",
-      "type",
-    ] as const;
+    ];
+
+    if (canEditType) {
+      allowedFields.push("type");
+    }
 
     const payload: Record<string, unknown> = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         payload[field] = req.body[field];
       }
+    }
+
+    if (!canEditType && req.body.type !== undefined) {
+      return res.status(403).json({
+        message: "Only Admin can update user type",
+      });
     }
 
     await targetUser.update(payload);
@@ -533,10 +598,28 @@ export const updateStaffDetailsAdmin = async (req: Request, res: Response) => {
       return res.status(403).json({ message: "You can only modify staff in your own department" });
     }
 
+    if (!access) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { role, departement_id } = req.body as { role?: "Manager" | "Staff"; departement_id?: string };
 
+    const requesterIsHRManager =
+      access.role === "Manager" &&
+      (await isHumanResourcesManager(access.departementId));
+
+    const canEditRole = access.role === "Admin" || requesterIsHRManager;
+
+    if (!canEditRole && role !== undefined) {
+      return res.status(403).json({
+        message: "You do not have permission to update role",
+      });
+    }
+
     const updates: Record<string, any> = {};
-    if (role !== undefined) updates.role = role === "Manager" ? "Manager" : "Staff";
+    if (role !== undefined && canEditRole) {
+      updates.role = role === "Manager" ? "Manager" : "Staff";
+    }
     if (departement_id !== undefined) {
       updates.departement_id = departement_id || null;
       updates.departement_name = await getDepartementDisplayName(departement_id || null);

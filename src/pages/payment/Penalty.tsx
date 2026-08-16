@@ -7,7 +7,10 @@ import {
   CircularProgress,
   Alert,
   MenuItem,
+  Card,
+  CardContent,
 } from "@mui/material";
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import Navbar from "../../common/Navbar";
 
 type StaffUser = {
@@ -140,115 +143,173 @@ const Penalty: React.FC = () => {
         width: "100%",
         minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
-        bgcolor: "#ffffff",
-        px: 2,
-        py: 6,
+        flexDirection: "column",
+        bgcolor: "#f8fafc",
+        px: { xs: 1.5, sm: 2, md: 3 },
+        py: { xs: 3, md: 5 },
+        boxSizing: 'border-box',
       }}
     >
       <Navbar />
 
-      <Box sx={{ width: "100%", maxWidth: 600, display: "flex", flexDirection: "column", gap: 3 }}>
-        <Box>
-          <Typography variant="h5" fontWeight={600}>
-            New Penalty
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Create penalty for staff member
-          </Typography>
-        </Box>
-
-        {error && <Alert severity="error">{error}</Alert>}
-        {success && <Alert severity="success">Penalty created successfully</Alert>}
-
-        {/* STAFF DROPDOWN */}
-        <TextField
-          select
-          label="Select Staff"
-          value={selectedUser}
-          onChange={(e) => setSelectedUser(e.target.value)}
-          fullWidth
-          disabled={fetching}
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: { xs: "100%", sm: 620, md: 760, lg: 820 },
+          mx: "auto",
+          mt: 3,
+          display: "flex",
+          flexDirection: "column",
+          gap: { xs: 2, md: 3 },
+        }}
+      >
+        <Card
+          elevation={0}
+          sx={{
+            p: { xs: 3, sm: 4 },
+            backgroundColor: '#ffffff',
+            borderRadius: 3,
+            border: '1px solid #e2e8f0',
+          }}
         >
-          {staffList.map((staff) => (
-            <MenuItem key={staff.user_id} value={staff.user_id}>
-              {staff.name}
-            </MenuItem>
-          ))}
-        </TextField>
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+            <Box sx={{ mb: 4 }}>
+              <Typography variant="h4" fontWeight={700} color="#0f172a" gutterBottom>
+                New Penalty ⚠️
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Create penalty record for a staff member.
+              </Typography>
+            </Box>
 
-        {/* CATEGORY */}
-        <TextField
-          select
-          label="Category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          fullWidth
-        >
-          {penaltyCategories.map((cat) => (
-            <MenuItem key={cat.value} value={cat.value}>
-              {cat.label}
-            </MenuItem>
-          ))}
-        </TextField>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+                {error}
+              </Alert>
+            )}
 
-        {/* AMOUNT */}
-        <TextField
-          label="Amount"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
-          fullWidth
-        />
+            {success && (
+              <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
+                Penalty created successfully
+              </Alert>
+            )}
 
-        {/* FILE */}
-        <Box>
-          {!file && (
-            <Box
-              sx={{
-                border: "1px dashed #d0d0d0",
-                borderRadius: 2,
-                p: 3,
-                textAlign: "center",
-                bgcolor: "#fff",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              <input
-                type="file"
-                hidden
-                id="upload"
-                onChange={handleFileChange}
-                disabled={loading}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* STAFF DROPDOWN */}
+              <TextField
+                select
+                label="Select Staff"
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                fullWidth
+                disabled={fetching}
+                InputProps={{ sx: { borderRadius: 2 } }}
+              >
+                {staffList.map((staff) => (
+                  <MenuItem key={staff.user_id} value={staff.user_id}>
+                    {staff.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {/* CATEGORY */}
+              <TextField
+                select
+                label="Category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                fullWidth
+                InputProps={{ sx: { borderRadius: 2 } }}
+              >
+                {penaltyCategories.map((cat) => (
+                  <MenuItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {/* AMOUNT */}
+              <TextField
+                label="Amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                fullWidth
+                InputProps={{ sx: { borderRadius: 2 } }}
               />
 
-              <label htmlFor="upload" style={{ cursor: loading ? "not-allowed" : "pointer" }}>
-                <Typography variant="body1" color="textSecondary">
-                  Click to upload evidence (image or PDF)
-                </Typography>
-              </label>
+              {/* FILE */}
+              <Box>
+                <Box
+                  component="label"
+                  htmlFor="upload"
+                  sx={{
+                    border: "2px dashed #cbd5e1",
+                    borderRadius: 2.5,
+                    p: 3,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    bgcolor: "#f8fafc",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      borderColor: "#2563eb",
+                      bgcolor: "#eff6ff",
+                    }
+                  }}
+                >
+                  <input
+                    type="file"
+                    hidden
+                    id="upload"
+                    onChange={handleFileChange}
+                    disabled={loading}
+                  />
+                  <CloudUploadIcon sx={{ fontSize: 40, color: "#64748b", mb: 1 }} />
+                  <Typography variant="body1" fontWeight={600} color="#0f172a">
+                    {file ? file.name : "Click to upload evidence"}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Supports image or PDF files
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* NOTE */}
+              <TextField
+                label="Note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                fullWidth
+                multiline
+                rows={3}
+                InputProps={{ sx: { borderRadius: 2 } }}
+              />
+
+              {/* SUBMIT */}
+              <Button
+                variant="contained"
+                disabled={loading}
+                onClick={handleSubmit}
+                size="large"
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  textTransform: "none",
+                  bgcolor: "#2563eb",
+                  boxShadow: "none",
+                  "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                }}
+              >
+                {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Submit Penalty"}
+              </Button>
             </Box>
-          )}
-        </Box>
-
-        {/* NOTE */}
-        <TextField
-          label="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          fullWidth
-          multiline
-          rows={2}
-        />
-
-        {/* SUBMIT */}
-        <Button
-          variant="contained"
-          disabled={loading}
-          onClick={handleSubmit}
-        >
-          {loading ? <CircularProgress size={24} /> : "Submit Penalty"}
-        </Button>
+          </CardContent>
+        </Card>
       </Box>
     </Box>
   );
