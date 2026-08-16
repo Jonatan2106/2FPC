@@ -5,6 +5,7 @@ import { staff_detail as StaffDetail } from "../../../models/staff_details";
 import { leave_management as LeaveManagement } from "../../../models/leave_management";
 import { reimburse as Reimbursement } from "../../../models/reimburse";
 import { attendance as Attendance } from "../../../models/attendance";
+import { payroll as Payroll } from "../../../models/payroll";
 import { penalty as Penalty } from "../../../models/penalty";
 import { user as UserModel } from "../../../models/user";
 import { generateToken } from "../utils/jwt_helper";
@@ -369,13 +370,9 @@ export const deleteUserAdmin = async (req: Request, res: Response) => {
     await LeaveManagement.destroy({ where: { user_id: userId } }).catch(() => {});
     await Reimbursement.destroy({ where: { user_id: userId } }).catch(() => {});
     await Attendance.destroy({ where: { user_id: userId } }).catch(() => {});
+    await Payroll.destroy({ where: { user_id: userId } }).catch(() => {});
     await Penalty.destroy({ where: { user_id: userId } }).catch(() => {});
-    // --------------------------------------------------
-
-    // Hapus data staff_detail
-    await StaffDetail.destroy({
-      where: { user_id: userId },
-    });
+    await StaffDetail.destroy({ where: { user_id: userId }});
 
     // Terakhir, hapus user utama
     await targetUser.destroy();
