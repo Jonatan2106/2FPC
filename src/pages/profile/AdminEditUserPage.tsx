@@ -30,7 +30,7 @@ const AdminEditUserPage: React.FC = () => {
 
   const [user, setUser] = useState<User | null>(null);
   const [staff, setStaff] = useState<any>(null);
-  const [departments, setDepartments] = useState<any[]>([]); // Menyimpan list departemen
+  const [departments, setDepartments] = useState<any[]>([]);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -61,16 +61,13 @@ const AdminEditUserPage: React.FC = () => {
           try {
             setCurrentUser(JSON.parse(storedUserRaw));
           } catch {
-            // ignore invalid localStorage payload
+            // ignore
           }
         }
 
-        // Fetch data secara bersamaan: Target User, Current User (Profile), dan List Departemen
-        const [targetRes, profileRes, deptRes] = await Promise.all([
+        const [targetRes, deptRes] = await Promise.all([
           fetch(`${API_BASE_URL}/admin/users/${id}`, { headers: getHeaders() }),
-          fetch(`${API_BASE_URL}/profile`, { headers: getHeaders() }).catch(() => null),
-          // Pastikan endpoint ini sesuai dengan route backend Anda untuk mengambil semua departemen
-          fetch(`${API_BASE_URL}/departements`, { headers: getHeaders() }).catch(() => null), 
+          fetch(`${API_BASE_URL}/departements`, { headers: getHeaders() }).catch(() => null),
         ]);
 
         const targetData = await targetRes.json();
@@ -82,11 +79,6 @@ const AdminEditUserPage: React.FC = () => {
 
         setUser(targetData.data);
         setStaff(targetData.data.staff_detail || null);
-
-        if (profileRes && profileRes.ok) {
-          const profileData = await profileRes.json();
-          setCurrentUser(profileData.data);
-        }
 
         if (deptRes && deptRes.ok) {
           const deptData = await deptRes.json();
@@ -103,11 +95,12 @@ const AdminEditUserPage: React.FC = () => {
     fetchData();
   }, [id]);
 
-  // Logika Hak Akses: Bersih, hanya cek Admin!
+  // Logika Hak Akses
   const u = currentUser as any;
   const isAdmin = u?.type === "Admin";
 
-  // Perizinan Field: Hanya Admin yang bisa mengedit Type dan Role
+  // Hanya Admin yang bisa edit Salary dan Type/Role. Manager tidak bisa edit salary.
+  const canEditSalary = isAdmin;
   const canEditType = isAdmin;
   const canEditRole = isAdmin;
 
@@ -129,18 +122,26 @@ const AdminEditUserPage: React.FC = () => {
     setSuccess("");
 
     try {
+      // 1. Siapkan data user dasar yang akan dikirim.
+      // Jika BUKAN Admin, jangan ikutkan 'salary' dan 'type' agar tidak memaksa update data terlarang.
+      const userPayload: any = {
+        name: user.name,
+        email: user.email,
+        alamat: user.alamat,
+        nomor_telepon: user.nomor_telepon,
+        foto: user.foto,
+      };
+
+      // Hanya masukkan salary dan type jika yang login adalah Admin
+      if (isAdmin) {
+        userPayload.salary = user.salary;
+        userPayload.type = user.type;
+      }
+
       const userRes = await fetch(`${API_BASE_URL}/admin/users/${id}`, {
         method: "PUT",
         headers: getHeaders(),
-        body: JSON.stringify({
-          name: user.name,
-          email: user.email,
-          alamat: user.alamat,
-          nomor_telepon: user.nomor_telepon,
-          salary: user.salary,
-          type: user.type,
-          foto: user.foto,
-        }),
+        body: JSON.stringify(userPayload),
       });
 
       const userData = await userRes.json();
@@ -150,16 +151,24 @@ const AdminEditUserPage: React.FC = () => {
         return;
       }
 
+      // 2. Jika ada data staff, sesuaikan juga payload-nya
       if (staff) {
+        const staffPayload: any = {
+          departement_id: staff.departement_id,
+          departement_name: staff.departement_name,
+        };
+
+        // Hanya masukkan role jika yang login adalah Admin
+        if (isAdmin) {
+          staffPayload.role = staff.role;
+        }
+
         const staffRes = await fetch(
           `${API_BASE_URL}/admin/staff-details/${id}`,
           {
             method: "PUT",
             headers: getHeaders(),
-            body: JSON.stringify({
-              role: staff.role,
-              departement_id: staff.departement_id,
-            }),
+            body: JSON.stringify(staffPayload),
           }
         );
 
@@ -171,9 +180,13 @@ const AdminEditUserPage: React.FC = () => {
         }
       }
 
-      setSuccess("User updated successfully");
+      setSuccess("User updated successfully! Redirecting...");
       setEditing(false);
-      setTimeout(() => setSuccess(""), 2000);
+      
+      setTimeout(() => {
+        navigate("/management-tree");
+      }, 1000);
+
     } catch (err) {
       setError("Error updating user");
       console.error(err);
@@ -201,6 +214,7 @@ const AdminEditUserPage: React.FC = () => {
         return;
       }
 
+      // Jika berhasil, arahkan kembali ke halaman manajemen user
       navigate("/users");
     } catch (err) {
       setError("Error deleting user");
@@ -350,13 +364,15 @@ const AdminEditUserPage: React.FC = () => {
                 InputProps={{ sx: { borderRadius: 2 } }}
               />
 
+              {/* Field Salary: Hanya bisa diedit oleh Admin */}
               <TextField
                 fullWidth
                 label="Salary"
                 type="number"
                 value={user.salary || ""}
                 onChange={(e) => handleUserChange("salary", Number(e.target.value))}
-                disabled={!editing}
+                disabled={!editing || !canEditSalary}
+                helperText={editing && !canEditSalary ? "Hanya Admin yang dapat mengubah Salary" : ""}
                 InputProps={{ sx: { borderRadius: 2 } }}
               />
 
@@ -391,13 +407,23 @@ const AdminEditUserPage: React.FC = () => {
                     <MenuItem value="Staff">Staff</MenuItem>
                   </TextField>
 
-                  {/* Dropdown Departemen (menggantikan input ID raw) */}
                   <TextField
                     fullWidth
                     select
                     label="Department"
                     value={staff.departement_id || ""}
-                    onChange={(e) => handleStaffChange("departement_id", e.target.value)}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const selectedDept = departments.find(
+                        (d) => d.departement_id === selectedId
+                      );
+                      const deptName = selectedDept ? selectedDept.company_name : "";
+                      setStaff({
+                        ...staff,
+                        departement_id: selectedId,
+                        departement_name: deptName,
+                      });
+                    }}
                     disabled={!editing}
                     InputProps={{ sx: { borderRadius: 2 } }}
                   >
@@ -482,7 +508,7 @@ const AdminEditUserPage: React.FC = () => {
         </Container>
       </Box>
 
-      {/* Dialog Konfirmasi Hapus User secara Menyeluruh */}
+      {/* Dialog Konfirmasi Hapus User */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
@@ -493,7 +519,7 @@ const AdminEditUserPage: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: "text.secondary" }}>
-            Tindakan ini akan menghapus akun pengguna beserta seluruh data terkait di sistem secara permanen (termasuk riwayat absensi, cuti, payroll, penalty, reimburse, dan data staff). Tindakan ini tidak dapat dibatalkan.
+            Tindakan ini akan menghapus akun pengguna beserta seluruh data terkait di sistem secara permanen. Tindakan ini tidak dapat dibatalkan.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

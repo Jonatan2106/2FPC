@@ -8,6 +8,7 @@ import {
   verifyQrCode,
   getUserQrCode,
   updateStaffDetailsAdmin,
+  deleteUserAdmin,
 } from "../controllers/user_controllers";
 import { authenticateJWT } from "../middleware/auth_middleware";
 import { controllerWrapper } from "../utils/controllerWrapper";
@@ -22,6 +23,7 @@ UserRouter.put("/staff/users/:id/profile", authenticateJWT, controllerWrapper(up
 
 // Update staff details (role, departement)
 UserRouter.put("/admin/staff-details/:id", authenticateJWT, controllerWrapper(updateStaffDetailsAdmin));
+UserRouter.delete("/admin/users/:id", authenticateJWT, controllerWrapper(deleteUserAdmin));
 
 // QR Code endpoints
 UserRouter.post("/qr/verify", controllerWrapper(verifyQrCode));

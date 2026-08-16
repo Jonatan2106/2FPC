@@ -334,6 +334,53 @@ export const updateUserProfileAdmin = async (req: Request, res: Response) => {
   }
 };
 
+export const deleteUserAdmin = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = String(id);
+
+    const access = await getRequesterAccess(req);
+    if (!access) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const targetUser = await User.findByPk(userId, {
+      include: [{ model: StaffDetail }],
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Pengecekan hak akses department jika yang menghapus bukan Admin
+    if (access.role !== "Admin") {
+      if (targetUser.staff_detail?.departement_id !== access.departementId) {
+        return res.status(403).json({
+          message: "You can only delete users in your own department",
+        });
+      }
+    }
+
+    // Hapus data staff_detail terlebih dahulu (jika ada) karena ada relasi foreign key
+    await StaffDetail.destroy({
+      where: { user_id: userId },
+    });
+
+    // Hapus user utama
+    await targetUser.destroy();
+
+    return res.status(200).json({
+      message: "User and associated records deleted successfully",
+    });
+  } catch (error) {
+    console.error("[deleteUserAdmin] Error:", error);
+    return res.status(500).json({
+      message: "Failed to delete user and associated records",
+      error,
+    });
+  }
+};
+
 export const updateOwnProfileStaff = async (req: Request, res: Response) => {
   try {
     const userId = String(req.params.id);
