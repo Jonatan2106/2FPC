@@ -63,8 +63,14 @@ class BackendService {
     final result = await _getJson(
       path: '/mobile/attendance/qr',
       token: user.token,
+      // 👇 INI YANG KURANG: Wajib dikirim agar backend tidak menolak request
+      additionalHeaders: {
+        'x-user-id': user.id,
+      },
     );
+    
     final data = (result['data'] as Map?)?.cast<String, dynamic>() ?? result;
+    // Mengambil qr_token (teks panjang) dari backend
     final token = (data['qr_token'] ?? '').toString();
 
     if (token.isEmpty) {
@@ -289,19 +295,26 @@ class BackendService {
     required String path,
     String? token,
     Map<String, String>? query,
+    Map<String, String>? additionalHeaders,
   }) async {
     final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: query);
-    final res = await _client
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Connection': 'close',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+    if (additionalHeaders != null) {
+      headers.addAll(additionalHeaders);
+    }
+    final response = await _client
         .get(
           uri,
-          headers: {
-            'Content-Type': 'application/json',
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
+          headers: headers,
         )
         .timeout(const Duration(seconds: 15));
 
-    return _parseResponse(res);
+    return _parseResponse(response);
   }
 
   Future<Map<String, dynamic>> _postJson({

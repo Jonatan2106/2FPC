@@ -106,53 +106,56 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     });
 
     try {
-      final qr = await widget.service.getAttendanceQr(widget.user);
-      final attendanceHistory = await widget.service.getAttendanceHistory(
-        widget.user,
-      );
-      final departments = await widget.service.getDepartments(widget.user);
+      // 1. Fetch QR secara mandiri
+      try {
+        final qr = await widget.service.getAttendanceQr(widget.user);
+        _qrData = qr;
+      } catch (e) {
+        print('Error Fetch QR: $e');
+        _qrData = 'ERROR: $e'; // Simpan pesan error agar bisa dilihat
+      }
 
-      String? selectedDepartment;
-      if (departments.isNotEmpty) {
-        if (widget.user.role == 'Admin') {
-          selectedDepartment =
-              departments.any((dept) => dept.id == widget.user.departmentId)
-              ? widget.user.departmentId
-              : departments.first.id;
-        } else {
-          selectedDepartment = widget.user.departmentId;
+      // 2. Fetch History secara mandiri
+      try {
+        _attendanceHistory = await widget.service.getAttendanceHistory(
+          widget.user,
+        );
+      } catch (e) {
+        print('Error Fetch History: $e');
+      }
+
+      // 3. Fetch Departemen secara mandiri
+      try {
+        _departments = await widget.service.getDepartments(widget.user);
+        if (_departments.isNotEmpty) {
+          if (widget.user.role == 'Admin') {
+            _selectedDepartmentId =
+                _departments.any((d) => d.id == widget.user.departmentId)
+                ? widget.user.departmentId
+                : _departments.first.id;
+          } else {
+            _selectedDepartmentId = widget.user.departmentId;
+          }
+        }
+      } catch (e) {
+        print('Error Fetch Departments: $e');
+      }
+
+      // 4. Fetch Leaves jika departemen terpilih
+      if (_selectedDepartmentId != null) {
+        try {
+          _leaves = await widget.service.getDepartmentLeaves(
+            token: widget.user.token,
+            departmentId: _selectedDepartmentId!,
+            month: _focusedDay,
+            userRole: widget.user.role,
+          );
+        } catch (e) {
+          print('Error Fetch Leaves: $e');
         }
       }
 
-      final leaves = selectedDepartment == null
-          ? <LeaveEntry>[]
-          : await widget.service.getDepartmentLeaves(
-              token: widget.user.token,
-              departmentId: selectedDepartment,
-              month: _focusedDay,
-              userRole: widget.user.role,
-            );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _qrData = qr;
-        _attendanceHistory = attendanceHistory;
-        _departments = departments;
-        _selectedDepartmentId = selectedDepartment;
-        _leaves = leaves;
-      });
-
       await _loadPayrollForDay(_selectedDay);
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Gagal memuat data: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -637,7 +640,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                                   ),
                                 ],
                               ),
-                              _buildModeDropdown(),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -710,53 +712,133 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     );
   }
 
-  Widget _buildModeDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black12),
+  void _handleDaySelection(DateTime selectedDay) {
+    _openDayDetailsPopup(selectedDay);
+  }
+
+  Future<void> _openDayDetailsPopup(DateTime date) async {
+    // Ambil data kehadiran user login dan data cuti departemen pada tanggal tersebut
+    final attendanceEntries = _attendanceForDay(date);
+    final leaveEntries = _entriesForDay(date);
+
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<DeptCalendarMode>(
-          value: _deptMode,
-          isDense: true,
-          icon: const Icon(Icons.arrow_drop_down),
-          onChanged: (mode) {
-            if (mode != null) setState(() => _deptMode = mode);
-          },
-          items: [
-            const DropdownMenuItem(
-              value: DeptCalendarMode.viewAttendance,
-              child: Text('Lihat Kehadiran', style: TextStyle(fontSize: 12)),
-            ),
-            const DropdownMenuItem(
-              value: DeptCalendarMode.requestLeave,
-              child: Text('Pengajuan Cuti', style: TextStyle(fontSize: 12)),
-            ),
-            const DropdownMenuItem(
-              value: DeptCalendarMode.requestReimburse,
-              child: Text(
-                'Pengajuan Reimburse',
-                style: TextStyle(fontSize: 12),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Detail Tanggal ${DateFormat('dd MMM yyyy').format(date)}',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-            ),
-          ],
-        ),
-      ),
+              const Divider(height: 24),
+
+              // --- BAGIAN 1: RIWAYAT KEHADIRAN USER LOGIN ---
+              const Text(
+                'Riwayat Kehadiran Anda',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              if (attendanceEntries.isEmpty)
+                const Text('Belum ada data kehadiran pada tanggal ini.')
+              else
+                ...attendanceEntries.map(
+                  (entry) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.schedule, color: Colors.blue),
+                    title: Text(
+                      'Masuk: ${DateFormat('HH:mm').format(entry.clockIn)}',
+                    ),
+                    subtitle: Text(
+                      entry.clockOut == null
+                          ? 'Belum clock out'
+                          : 'Keluar: ${DateFormat('HH:mm').format(entry.clockOut!)}',
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
+              // --- BAGIAN 2: DAFTAR CUTI DEPARTEMEN ---
+              const Text(
+                'Cuti Departemen',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              if (leaveEntries.isEmpty)
+                const Text(
+                  'Tidak ada rekan departemen yang cuti pada tanggal ini.',
+                )
+              else
+                ...leaveEntries.map(
+                  (entry) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_busy, color: Colors.orange),
+                    title: Text(entry.employeeName),
+                  ),
+                ),
+
+              const SizedBox(height: 24),
+
+              // --- BAGIAN 3: TOMBOL REQUEST CUTI & REIMBURSE ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop(); // Tutup popup dulu
+                        _openRequestForm(type: RequestType.leave, date: date);
+                      },
+                      icon: const Icon(Icons.beach_access, size: 18),
+                      label: const Text(
+                        'Request Cuti',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12), // Jarak antar tombol
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop(); // Tutup popup dulu
+                        _openRequestForm(
+                          type: RequestType.reimburse,
+                          date: date,
+                        );
+                      },
+                      icon: const Icon(Icons.receipt_long, size: 18),
+                      label: const Text(
+                        'Reimburse',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  void _handleDaySelection(DateTime selectedDay) {
-    if (_deptMode == DeptCalendarMode.viewAttendance) {
-      _openAttendancePopup(selectedDay);
-    } else if (_deptMode == DeptCalendarMode.requestLeave) {
-      _openRequestForm(type: RequestType.leave, date: selectedDay);
-    } else if (_deptMode == DeptCalendarMode.requestReimburse) {
-      _openRequestForm(type: RequestType.reimburse, date: selectedDay);
-    }
-  }
-
+  // KODE INI SUDAH SEMPURNA, TIDAK PERLU DIUBAH LAGI
   Widget _buildQrCard() {
     return Card(
       child: Padding(
@@ -772,6 +854,19 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                       height: 150,
                       width: 150,
                       child: Center(child: CircularProgressIndicator()),
+                    )
+                  // Jika teks diawali "ERROR", tampilkan pesan merah
+                  : _qrData.startsWith('ERROR')
+                  ? Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        _qrData, // Menampilkan error spesifik dari backend
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     )
                   : QrImageView(
                       data: _qrData,
