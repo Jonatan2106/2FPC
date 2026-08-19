@@ -187,19 +187,15 @@ export const generateAttendanceQr = async (req: Request, res: Response) => {
   try {
     const userIdFromHeader = (req.headers["x-user-id"] as string);
     const userIdFromBody = (req.body as { user_id?: string } | undefined)?.user_id;
-    console.log('[generateAttendanceQr] x-user-id from header:', userIdFromHeader);
-    console.log('[generateAttendanceQr] user_id from body:', userIdFromBody);
     
     const userId = userIdFromHeader || userIdFromBody;
-    console.log('[generateAttendanceQr] Using userId:', userId);
     
     if (!userId) {
       return res.status(400).json({ message: "user_id is required" });
     }
 
+    // Gunakan payload ringkas agar QR code tidak terlalu padat/ruwet saat di-render
     const qrToken = generateAttendanceQrToken(userId);
-    console.log('[generateAttendanceQr] Generated QR token with userId:', userId);
-    
     const qrDataUrl = await QRCode.toDataURL(qrToken);
 
     return res.status(200).json({

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/src/models/domain_models.dart';
 import 'package:mobile/src/services/backend_service.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'dart:convert';
+import 'package:qr_flutter/qr_flutter.dart';
 
 enum DeptCalendarMode { viewAttendance, requestLeave, requestReimburse }
 
@@ -28,6 +29,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   String? _selectedDepartmentId;
+
   // Mode for department calendar date taps
   DeptCalendarMode _deptMode = DeptCalendarMode.requestLeave;
 
@@ -99,6 +101,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   }
 
   Future<void> _initializeData() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
     });
@@ -109,10 +112,18 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         widget.user,
       );
       final departments = await widget.service.getDepartments(widget.user);
-      final selectedDepartment =
-          departments.any((dept) => dept.id == widget.user.departmentId)
-          ? widget.user.departmentId
-          : (departments.isNotEmpty ? departments.first.id : null);
+
+      String? selectedDepartment;
+      if (departments.isNotEmpty) {
+        if (widget.user.role == 'Admin') {
+          selectedDepartment =
+              departments.any((dept) => dept.id == widget.user.departmentId)
+              ? widget.user.departmentId
+              : departments.first.id;
+        } else {
+          selectedDepartment = widget.user.departmentId;
+        }
+      }
 
       final leaves = selectedDepartment == null
           ? <LeaveEntry>[]
@@ -153,6 +164,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   }
 
   Future<void> _loadPayrollForDay(DateTime day) async {
+    if (!mounted) return;
     setState(() {
       _payrollLoading = true;
     });
@@ -244,6 +256,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   Future<void> _openAttendancePopup(DateTime date) async {
     final dayEntries = _attendanceForDay(date);
 
+    if (!mounted) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -379,75 +392,6 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     );
   }
 
-  Future<void> _openRequestPopup(DateTime date) async {
-    final dayEntries = _entriesForDay(date);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tanggal ${DateFormat('dd MMM yyyy').format(date)}',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Sedang cuti (${dayEntries.length}):',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 6),
-              if (dayEntries.isEmpty)
-                const Text('Belum ada staff cuti pada tanggal ini.')
-              else
-                ...dayEntries.map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event_busy),
-                    title: Text(entry.employeeName),
-                    subtitle: Text('Jenis: ${entry.type}'),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      _openRequestForm(type: RequestType.leave, date: date);
-                    },
-                    icon: const Icon(Icons.beach_access),
-                    label: const Text('Request Cuti'),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: () {
-                      Navigator.of(sheetContext).pop();
-                      _openRequestForm(type: RequestType.reimburse, date: date);
-                    },
-                    icon: const Icon(Icons.receipt_long),
-                    label: const Text('Request Reimburse'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Future<void> _openRequestForm({
     required RequestType type,
     required DateTime date,
@@ -455,6 +399,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     final descriptionController = TextEditingController();
     final amountController = TextEditingController();
 
+    if (!mounted) return;
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
@@ -578,9 +523,15 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                           const SizedBox(height: 8),
 
                           // --- KONTROL HAK AKSES DEPARTEMEN ---
-                          if (widget.user.role == 'Admin')
+                          if (widget.user.role == 'Admin' &&
+                              _departments.isNotEmpty)
                             DropdownButtonFormField<String>(
-                              initialValue: _selectedDepartmentId,
+                              initialValue:
+                                  _departments.any(
+                                    (d) => d.id == _selectedDepartmentId,
+                                  )
+                                  ? _selectedDepartmentId
+                                  : _departments.first.id,
                               decoration: const InputDecoration(
                                 labelText: 'Pilih Departemen',
                                 border: OutlineInputBorder(),
@@ -652,38 +603,41 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
 
                           const SizedBox(height: 20),
 
-                          // --- CUSTOM HEADER DENGAN NAVIGASI PANAH ---
+                          // --- CUSTOM HEADER DENGAN NAVIGASI BULAN & DROPDOWN MODE ---
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.chevron_left),
-                                onPressed: () {
-                                  setState(() {
-                                    _focusedDay = DateTime(
-                                      _focusedDay.year,
-                                      _focusedDay.month - 1,
-                                    );
-                                  });
-                                  _loadLeavesForMonth(_focusedDay);
-                                },
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_left),
+                                    onPressed: () {
+                                      setState(() {
+                                        _focusedDay = DateTime(
+                                          _focusedDay.year,
+                                          _focusedDay.month - 1,
+                                          1,
+                                        );
+                                      });
+                                      _loadLeavesForMonth(_focusedDay);
+                                    },
+                                  ),
+                                  _buildMonthYearText(),
+                                  IconButton(
+                                    icon: const Icon(Icons.chevron_right),
+                                    onPressed: () {
+                                      setState(() {
+                                        _focusedDay = DateTime(
+                                          _focusedDay.year,
+                                          _focusedDay.month + 1,
+                                          1,
+                                        );
+                                      });
+                                      _loadLeavesForMonth(_focusedDay);
+                                    },
+                                  ),
+                                ],
                               ),
-
-                              _buildMonthYearText(),
-
-                              IconButton(
-                                icon: const Icon(Icons.chevron_right),
-                                onPressed: () {
-                                  setState(() {
-                                    _focusedDay = DateTime(
-                                      _focusedDay.year,
-                                      _focusedDay.month + 1,
-                                    );
-                                  });
-                                  _loadLeavesForMonth(_focusedDay);
-                                },
-                              ),
-
                               _buildModeDropdown(),
                             ],
                           ),
@@ -732,7 +686,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
           child: Text(
             DateFormat('MMMM').format(_focusedDay),
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.underline,
             ),
@@ -740,14 +694,14 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         ),
         const Text(
           " ",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         InkWell(
           onTap: _showYearPicker,
           child: Text(
             DateFormat('yyyy').format(_focusedDay),
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               decoration: TextDecoration.underline,
             ),
@@ -759,29 +713,34 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
 
   Widget _buildModeDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<DeptCalendarMode>(
-          value: _deptMode == DeptCalendarMode.requestReimburse
-              ? DeptCalendarMode.requestLeave
-              : _deptMode,
+          value: _deptMode,
           isDense: true,
           icon: const Icon(Icons.arrow_drop_down),
           onChanged: (mode) {
             if (mode != null) setState(() => _deptMode = mode);
           },
           items: [
-            DropdownMenuItem(
+            const DropdownMenuItem(
               value: DeptCalendarMode.viewAttendance,
-              child: Text('Lihat Kehadiran', style: _modeStyle()),
+              child: Text('Lihat Kehadiran', style: TextStyle(fontSize: 12)),
             ),
-            DropdownMenuItem(
+            const DropdownMenuItem(
               value: DeptCalendarMode.requestLeave,
-              child: Text('Pengajuan', style: _modeStyle()),
+              child: Text('Pengajuan Cuti', style: TextStyle(fontSize: 12)),
+            ),
+            const DropdownMenuItem(
+              value: DeptCalendarMode.requestReimburse,
+              child: Text(
+                'Pengajuan Reimburse',
+                style: TextStyle(fontSize: 12),
+              ),
             ),
           ],
         ),
@@ -789,13 +748,13 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     );
   }
 
-  TextStyle _modeStyle() => const TextStyle(fontSize: 12);
-
   void _handleDaySelection(DateTime selectedDay) {
     if (_deptMode == DeptCalendarMode.viewAttendance) {
       _openAttendancePopup(selectedDay);
-    } else {
-      _openRequestPopup(selectedDay);
+    } else if (_deptMode == DeptCalendarMode.requestLeave) {
+      _openRequestForm(type: RequestType.leave, date: selectedDay);
+    } else if (_deptMode == DeptCalendarMode.requestReimburse) {
+      _openRequestForm(type: RequestType.reimburse, date: selectedDay);
     }
   }
 
@@ -808,7 +767,21 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
           children: [
             Text('QR Absensi', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            Center(child: QrImageView(data: _qrData, size: 150)),
+            Center(
+              child: _qrData.isEmpty
+                  ? const SizedBox(
+                      height: 150,
+                      width: 150,
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : QrImageView(
+                      data: _qrData,
+                      version: QrVersions.auto,
+                      size: 200.0,
+                      gapless: true,
+                      backgroundColor: Colors.white,
+                    ),
+            ),
           ],
         ),
       ),

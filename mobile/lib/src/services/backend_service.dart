@@ -13,7 +13,7 @@ class BackendService {
 
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.109.188.126:8080/api',
+    defaultValue: 'https://twofpc.onrender.com/api',
   );
 
   Future<AppUser> login({
@@ -44,13 +44,15 @@ class BackendService {
       }
 
       return AppUser(
-        id: (data['user_id'] ?? '').toString(),
-        name: (data['name'] ?? data['username'] ?? 'Staff').toString(),
-        departmentId: (data['department_id'] ?? 'unknown').toString(),
-        departmentName: (data['department_name'] ?? 'Departemen').toString(),
-        token: token,
-        role: (data['role'] ?? 'Staff').toString(),
-      );
+      id: (data['user_id'] ?? '').toString(),
+      name: (data['name'] ?? data['username'] ?? 'Staff').toString(),
+      departmentId: (data['department_id'] ?? 'unknown').toString(),
+      departmentName: (data['department_name'] ?? 'Departemen').toString(),
+      token: token,
+      role: (data['role'] ?? 'Staff').toString(),
+      qrCode: (data['qr_code'] ?? '').toString(),     // <-- Ambil dari respons backend
+      qrImage: (data['qr_image'] ?? '').toString(),   // <-- Ambil dari respons backend
+    );
     } catch (e) {
       debugPrint('[Login Error] $e');
       rethrow;

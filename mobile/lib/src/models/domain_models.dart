@@ -8,6 +8,8 @@ class AppUser {
     required this.departmentName,
     required this.token,
     required this.role,
+    required this.qrCode,   // <-- Tambahkan ini
+    required this.qrImage,  // <-- Tambahkan ini
   });
 
   final String id;
@@ -16,8 +18,9 @@ class AppUser {
   final String departmentName;
   final String token;
   final String role;
+  final String qrCode;   // <-- Tambahkan ini
+  final String qrImage;  // <-- Tambahkan ini
 }
-
 class Department {
   Department({required this.id, required this.name});
 
