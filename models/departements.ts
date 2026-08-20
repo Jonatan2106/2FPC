@@ -26,40 +26,4 @@ export class departement extends Model {
         unique: true
     })
     declare company_email: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: false
-    })
-    declare password: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: true
-    })
-    declare address: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: true
-    })
-    declare website: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: true
-    })
-    declare logo_url: string;
-
-    @Column({
-        type: DataType.TEXT,
-        allowNull: true
-    })
-    declare description: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: true
-    })
-    declare industry: string;
 }
