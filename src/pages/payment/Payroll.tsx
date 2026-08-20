@@ -40,6 +40,8 @@ type PayrollSummary = {
   final_salary?: number;
   payroll_period_label?: string;
   payment_status?: 'paid' | 'unpaid';
+  generated_by?: string;
+  paid_by?: string;
 };
 
 const formatCurrency = (value: number) =>
@@ -246,6 +248,7 @@ const Payroll: React.FC = () => {
         {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
         {/* DATA TABLE SECTION */}
+        {/* DATA TABLE SECTION */}
         <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden', backgroundColor: '#ffffff' }}>
           <Box sx={{ p: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
@@ -261,6 +264,8 @@ const Payroll: React.FC = () => {
                   <TableCell sx={{ fontWeight: 600 }}>Nama Staf</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Status Data</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Total Gaji Bersih (Net)</TableCell>
+                  {/* TAMBAHAN KOLOM INFO PROSES */}
+                  <TableCell sx={{ fontWeight: 600 }}>Info Proses</TableCell> 
                   <TableCell sx={{ fontWeight: 600 }} align="center">Aksi / Pembayaran</TableCell>
                 </TableRow>
               </TableHead>
@@ -297,7 +302,25 @@ const Payroll: React.FC = () => {
                           </Typography>
                         </TableCell>
 
-                        {/* 4. TOMBOL AKSI */}
+                        {/* 4. INFO PROSES (GENERATE & PAID BY) */}
+                        <TableCell>
+                          {isGenerated ? (
+                            <Box>
+                              <Typography variant="caption" display="block" color="text.secondary">
+                                <b>Gen:</b> {data?.generated_by || 'Sistem'}
+                              </Typography>
+                              {isPaid && (
+                                <Typography variant="caption" display="block" color="success.main">
+                                  <b>Paid:</b> {data?.paid_by || 'Sistem'}
+                                </Typography>
+                              )}
+                            </Box>
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">-</Typography>
+                          )}
+                        </TableCell>
+
+                        {/* 5. TOMBOL AKSI */}
                         <TableCell align="center">
                           {!isGenerated ? (
                             // JIKA BELUM GENERATE
@@ -332,7 +355,8 @@ const Payroll: React.FC = () => {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                    {/* colSpan diubah menjadi 5 karena ada tambahan kolom Info Proses */}
+                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}> 
                       <Typography variant="body2" color="text.secondary">
                         {selectedDeptId 
                           ? "Tidak ada data staf pada departemen ini." 

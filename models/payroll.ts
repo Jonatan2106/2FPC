@@ -106,4 +106,19 @@ export class payroll extends Model {
         foreignKey: "user_id", targetKey: "user_id"
     })
     declare user_data: user;
+
+    @ForeignKey(() => user) // Asumsi nama model user Anda adalah User
+    @Column({ type: DataType.UUID, allowNull: true })
+    declare generated_by: string | null;
+
+    @ForeignKey(() => user)
+    @Column({ type: DataType.UUID, allowNull: true })
+    declare paid_by: string | null;
+
+    // Definisikan relasinya (Alias)
+    @BelongsTo(() => user, 'generated_by')
+    declare generator: user;
+
+    @BelongsTo(() => user, 'paid_by')
+    declare payer: user;
 }

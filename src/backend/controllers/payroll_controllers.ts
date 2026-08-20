@@ -125,6 +125,8 @@ const mapPayrollRecord = (payrollRecord: any) => {
     breakdown: record.breakdown,
     paidAt: record.paidAt,
     createdAt: record.createdAt,
+    generated_by: record.username || null,
+    paid_by: record.username || null,
   };
 };
 
