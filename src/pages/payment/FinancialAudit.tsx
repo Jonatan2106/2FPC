@@ -101,7 +101,7 @@ const FinancialAudit: React.FC = () => {
   }, [selectedMonth, selectedYear]);
 
   // Generate list tahun (misal: 3 tahun ke belakang & 1 tahun ke depan)
-  const years = Array.from(new Array(5), (val, index) => currentYear - 3 + index);
+  const years = Array.from(new Array(5), (index) => currentYear - 3 + index);
   
   const months = [
     { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' },

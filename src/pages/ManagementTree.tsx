@@ -57,7 +57,7 @@ interface TreeNode {
 const ManagementTree: React.FC = () => {
   const navigate = useNavigate();
 
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [data, setData] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

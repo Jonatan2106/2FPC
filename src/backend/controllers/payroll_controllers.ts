@@ -315,7 +315,7 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
 export const markPayrollPaid = async (req: Request, res: Response) => {
   try {
     const { user_id, pay_date } = req.body as { user_id?: string; pay_date?: string };
-    const adminId = (req as any).user?.userId || (req as any).user?.id;
+    const adminId = (req as any).user?.user_id || (req as any).user?.id;
     if (!user_id) {
       return res.status(400).json({ message: "user_id is required" });
     }
@@ -337,7 +337,7 @@ export const markPayrollPaid = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Payroll record not found for this period" });
     }
 
-    const updatedPayroll = await payrollRecord.update({ paidAt: new Date() });
+    const updatedPayroll = await payrollRecord.update({ paidAt: new Date(), paid_by: adminId });
     return res.status(200).json({
       message: "Payroll marked as paid",
       data: {
