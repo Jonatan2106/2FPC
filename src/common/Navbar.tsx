@@ -21,7 +21,6 @@ const Navbar: React.FC = () => {
 
   if (!user) return null;
 
-  // Cukup cek apakah type user adalah "Admin"
   const u = user as any;
   const isAdmin = u?.type === "Admin";
 

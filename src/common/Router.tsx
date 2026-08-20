@@ -18,6 +18,7 @@ import ViewUsers from "../pages/profile/ViewUsers";
 import AdminEditUserPage from "../pages/profile/AdminEditUserPage";
 import CreateDepartment from "../pages/departement/CreateDepartementAdmin";
 import EditDepartmentAdmin from "../pages/departement/EditDepartmentAdmin";
+import FinancialAudit from "../pages/payment/FinancialAudit";
 
 export function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -55,20 +56,21 @@ export function Router() {
           <>
             <Route path="/" element={<HomePage user={displayUser} />} />
             <Route path="/profile" element={<ProfileManagement userData={displayUser} />} />
-            <Route path="/reimburse-list" element={<ReimburseList />} />
-            <Route path="/create-account" element={<CreateUser />} />
             <Route path="/attendance-view" element={<ViewAttendance />} />
             <Route path="/leave-management-list" element={<LeaveManagement />} />
             <Route path="/leave-view" element={<ViewLeave />} />
             <Route path="/dashboard" element={<HomePage user={displayUser} />} />
-            <Route path="/payroll" element={<Payroll />} />
             <Route path="/penalty-requests" element={<Penalty />} />
             <Route path="/view-leave" element={<ViewLeave />} />
+            <Route path="/create-account" element={<CreateUser />} />
             <Route path="/management-tree" element={<ManagementTree />} />
             <Route path="/create-departement" element={<CreateDepartment />} />
-            <Route path="/users" element={<ViewUsers />} />
             <Route path="/users/:id" element={<AdminEditUserPage />} />
             <Route path="/edit-departement/:id" element={<EditDepartmentAdmin />} />
+            <Route path="/audit" element={<FinancialAudit />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/reimburse-list" element={<ReimburseList />} />
+            <Route path="/users" element={<ViewUsers />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />

@@ -23,6 +23,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from "react-router-dom";
 import Navbar from "../common/Navbar";
+import { useAuth } from "../context/AuthContext";
 
 const theme = createTheme({
   palette: {
@@ -55,9 +56,13 @@ interface TreeNode {
 
 const ManagementTree: React.FC = () => {
   const navigate = useNavigate();
+
+  const { user, logout } = useAuth();
   const [data, setData] = useState<TreeNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const u = user as any;
+  const isAdmin = u?.type === "Admin";
 
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
   const API_BASE_URL = `${BASE_URL}/api/web`;
@@ -106,7 +111,7 @@ const ManagementTree: React.FC = () => {
 
           return {
             id: dept.departement_id,
-            name: dept.company_name || "Unknown Department", 
+            name: dept.company_name || "Unknown Department",
             type: "department",
             children: deptUsers.map((user: any) => ({
               id: user.user_id,
@@ -139,14 +144,14 @@ const ManagementTree: React.FC = () => {
       key={node.id}
       itemId={node.id}
       label={
-        <Box 
-          sx={{ 
-            display: "flex", 
-            alignItem: "center", 
-            justifyContent: "space-between", 
-            width: "100%", 
+        <Box
+          sx={{
+            display: "flex",
+            alignItem: "center",
+            justifyContent: "space-between",
+            width: "100%",
             pr: 2,
-            py: 0.5 
+            py: 0.5
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -175,9 +180,8 @@ const ManagementTree: React.FC = () => {
               />
             )}
           </Box>
-
-          {/* Tombol aksi cepat khusus untuk level Department */}
-          {node.type === "department" && (
+          
+          {node.type === "department" && isAdmin && (
             <Button
               size="small"
               variant="outlined"
@@ -242,8 +246,8 @@ const ManagementTree: React.FC = () => {
         }}
       >
         <Navbar />
-        
-        <Box 
+
+        <Box
           sx={{
             display: "flex",
             flexDirection: "column",
@@ -265,15 +269,14 @@ const ManagementTree: React.FC = () => {
                 boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
               }}
             >
-              {/* Header dengan tombol Create Department dan Edit Users */}
-              <Box 
-                sx={{ 
-                  mb: 4, 
-                  display: "flex", 
-                  flexDirection: { xs: "column", sm: "row" }, 
-                  justifyContent: "space-between", 
+              <Box
+                sx={{
+                  mb: 4,
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: "space-between",
                   alignItems: { xs: "flex-start", sm: "center" },
-                  gap: 2 
+                  gap: 2
                 }}
               >
                 <Box>
@@ -284,27 +287,27 @@ const ManagementTree: React.FC = () => {
                     Explore the organizational hierarchy, departments, and assigned roles
                   </Typography>
                 </Box>
-
                 <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-                  <Button
-                    variant="contained"
-                    size="medium"
-                    startIcon={<AddIcon />}
-                    onClick={() => navigate("/create-departement")}
-                    sx={{
-                      py: 1,
-                      px: 2.5,
-                      borderRadius: 2.5,
-                      fontWeight: 600,
-                      textTransform: "none",
-                      bgcolor: "#2563eb",
-                      boxShadow: "none",
-                      whiteSpace: "nowrap",
-                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
-                    }}
-                  >
-                    Create Department
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="contained"
+                      size="medium"
+                      startIcon={<AddIcon />}
+                      onClick={() => navigate("/create-departement")}
+                      sx={{
+                        py: 1,
+                        px: 2.5,
+                        borderRadius: 2.5,
+                        fontWeight: 600,
+                        textTransform: "none",
+                        bgcolor: "#2563eb",
+                        boxShadow: "none",
+                        whiteSpace: "nowrap",
+                        "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
+                      }}
+                    >
+                      Create Department
+                    </Button>)}
 
                   <Button
                     variant="outlined"

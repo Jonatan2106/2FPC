@@ -131,7 +131,7 @@ const mapPayrollRecord = (payrollRecord: any) => {
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
     const { name, pay_date } = req.body as { name?: string; pay_date?: string };
-
+    const adminId = (req as any).user?.userId || (req as any).user?.id;
     if (!name) {
       return res.status(400).json({ message: "name is required" });
     }
@@ -217,6 +217,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
       payroll_cutoff_days: payrollCutoffDay,
       breakdown: payrollComputation.breakdown,
       paidAt: null,
+      generated_by: adminId,
     };
 
     const payrollData = existingPayroll
@@ -314,7 +315,7 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
 export const markPayrollPaid = async (req: Request, res: Response) => {
   try {
     const { user_id, pay_date } = req.body as { user_id?: string; pay_date?: string };
-
+    const adminId = (req as any).user?.userId || (req as any).user?.id;
     if (!user_id) {
       return res.status(400).json({ message: "user_id is required" });
     }
