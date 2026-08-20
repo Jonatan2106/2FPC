@@ -143,6 +143,12 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
 
     const existingUser = await User.findOne({
       where: { name: username },
+      include: [
+        {
+          model: StaffDetail,
+          attributes: ["role", "departement_id", "departement_name"],
+        },
+      ],
     });
 
     if (!existingUser) {
@@ -160,7 +166,7 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
     }
 
     const effectiveRole = await resolveEffectiveRole(existingUser);
-    const userDepartment = existingUser.staff_detail?.departement_name; 
+    const userDepartment = existingUser.staff_detail?.departement_name || existingUser.staff_detail?.departement_name; 
     const isFinance = userDepartment === 'Finance & Accounting' || userDepartment === 'FIN';
     if (channel === "web" && effectiveRole === "Staff" && !isFinance) {
       return res.status(403).json({
