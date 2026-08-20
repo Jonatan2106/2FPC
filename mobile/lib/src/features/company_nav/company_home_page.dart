@@ -30,7 +30,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   String? _selectedDepartmentId;
 
   // Mode for department calendar date taps
-  DeptCalendarMode _deptMode = DeptCalendarMode.requestLeave;
+  // DeptCalendarMode _deptMode = DeptCalendarMode.requestLeave;
 
   @override
   void initState() {
@@ -255,62 +255,62 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     }).toList();
   }
 
-  Future<void> _openAttendancePopup(DateTime date) async {
-    final dayEntries = _attendanceForDay(date);
+  // Future<void> _openAttendancePopup(DateTime date) async {
+  //   final dayEntries = _attendanceForDay(date);
 
-    if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Riwayat Kehadiran ${DateFormat('dd MMM yyyy').format(date)}',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              if (dayEntries.isEmpty)
-                const Text('Belum ada data kehadiran pada tanggal ini.')
-              else
-                ...dayEntries.map(
-                  (entry) => ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule),
-                    title: Text(
-                      'Masuk: ${DateFormat('HH:mm').format(entry.clockIn)}',
-                    ),
-                    subtitle: Text(
-                      entry.clockOut == null
-                          ? 'Belum clock out'
-                          : 'Keluar: ${DateFormat('HH:mm').format(entry.clockOut!)}',
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: const Text('Tutup'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  //   if (!mounted) return;
+  //   await showModalBottomSheet<void>(
+  //     context: context,
+  //     isScrollControlled: true,
+  //     builder: (sheetContext) {
+  //       return Padding(
+  //         padding: EdgeInsets.only(
+  //           left: 20,
+  //           right: 20,
+  //           top: 20,
+  //           bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+  //         ),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             Text(
+  //               'Riwayat Kehadiran ${DateFormat('dd MMM yyyy').format(date)}',
+  //               style: Theme.of(context).textTheme.titleLarge,
+  //             ),
+  //             const SizedBox(height: 12),
+  //             if (dayEntries.isEmpty)
+  //               const Text('Belum ada data kehadiran pada tanggal ini.')
+  //             else
+  //               ...dayEntries.map(
+  //                 (entry) => ListTile(
+  //                   dense: true,
+  //                   contentPadding: EdgeInsets.zero,
+  //                   leading: const Icon(Icons.schedule),
+  //                   title: Text(
+  //                     'Masuk: ${DateFormat('HH:mm').format(entry.clockIn)}',
+  //                   ),
+  //                   subtitle: Text(
+  //                     entry.clockOut == null
+  //                         ? 'Belum clock out'
+  //                         : 'Keluar: ${DateFormat('HH:mm').format(entry.clockOut!)}',
+  //                   ),
+  //                 ),
+  //               ),
+  //             const SizedBox(height: 12),
+  //             Align(
+  //               alignment: Alignment.centerRight,
+  //               child: TextButton(
+  //                 onPressed: () => Navigator.of(sheetContext).pop(),
+  //                 child: const Text('Tutup'),
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   String _formatPayrollRange(PayrollSummaryEntry? summary) {
     if (summary == null ||

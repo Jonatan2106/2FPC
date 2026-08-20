@@ -102,25 +102,25 @@ class BackendService {
     await prefs.setString(_sessionRoleKey, session.role);
   }
 
-  Future<Map<String, dynamic>> _getJson({
-    required String path,
-    String? token,
-    Map<String, String>? query,
-  }) async {
-    final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: query);
-    final response = await _client
-        .get(
-          uri,
-          headers: {
-            'Accept': 'application/json',
-            'Connection': 'close', // Mencegah TimeoutException
-            if (token != null) 'Authorization': 'Bearer $token',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+  // Future<Map<String, dynamic>> _getJson({
+  //   required String path,
+  //   String? token,
+  //   Map<String, String>? query,
+  // }) async {
+  //   final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: query);
+  //   final response = await _client
+  //       .get(
+  //         uri,
+  //         headers: {
+  //           'Accept': 'application/json',
+  //           'Connection': 'close', // Mencegah TimeoutException
+  //           if (token != null) 'Authorization': 'Bearer $token',
+  //         },
+  //       )
+  //       .timeout(const Duration(seconds: 15));
 
-    return _parseResponse(response);
-  }
+  //   return _parseResponse(response);
+  // }
 
   Future<Map<String, dynamic>> _postJson({
     required String path,
