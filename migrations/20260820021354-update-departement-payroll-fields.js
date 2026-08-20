@@ -1,7 +1,7 @@
 'use strict';
 
-module.exports = {
-  up: async (queryInterface, Sequelize) => {
+export default {
+  async up(queryInterface, Sequelize){
     // 1. Hapus kolom di departements
     await queryInterface.removeColumn('departements', 'password');
     await queryInterface.removeColumn('departements', 'address');
@@ -21,7 +21,7 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize){
     // Fungsi ini untuk mengembalikan (Undo) perubahan jika terjadi kesalahan
     await queryInterface.addColumn('departements', 'password', { type: Sequelize.STRING, allowNull: false, defaultValue: '123' });
     await queryInterface.addColumn('departements', 'address', { type: Sequelize.STRING });
