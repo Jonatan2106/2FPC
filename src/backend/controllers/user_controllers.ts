@@ -161,7 +161,7 @@ const handleLogin = async (req: Request, res: Response, channel: "web" | "mobile
 
     const effectiveRole = await resolveEffectiveRole(existingUser);
     const userDepartment = existingUser.staff_detail?.departement_name; 
-    const isFinance = userDepartment === 'Finance & Accounting';
+    const isFinance = userDepartment === 'Finance & Accounting' || userDepartment === 'FIN';
     if (channel === "web" && effectiveRole === "Staff" && !isFinance) {
       return res.status(403).json({
         message: "Staff tidak dapat login ke web. Gunakan aplikasi mobile.",
