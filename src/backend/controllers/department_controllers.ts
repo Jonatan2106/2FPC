@@ -79,11 +79,11 @@ export const createDepartmentAdmin = async (req: Request, res: Response) => {
 export const getAllDepartments = async (req: Request, res: Response) => {
   try {
     const access = await getRequesterAccess(req);
-    const departments = await Department.findAll({ order: [["createdAt", "DESC"]] });
+    const departements = await Department.findAll({ order: [["createdAt", "DESC"]] });
     const visibleDepartments =
       access?.role === "Admin"
-        ? departments
-        : departments.filter((department) => department.departement_id === access?.departementId);
+        ? departements
+        : departements.filter((department) => department.departement_id === access?.departementId);
     return res.status(200).json({ message: "Departments fetched", data: visibleDepartments });
   } catch (error) {
     return res.status(500).json({ message: "Failed to fetch departments", error });

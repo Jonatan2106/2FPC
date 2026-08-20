@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
   Stack,
   Typography,
   TextField,
-  Divider,
   Button,
   Alert,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  MenuItem,
 } from '@mui/material';
 import Navbar from '../../common/Navbar';
 
+// --- TYPES ---
+type Departement = { departement_id: string; company_name: string };
+type User = { 
+  user_id: string; 
+  name: string; 
+  staff_detail?: {
+    departement_id?: string;
+  };
+};
+
 type PayrollSummary = {
+  hasPayroll?: boolean; // Dari backend controller
   user_id?: string;
   staff_name?: string;
   base_salary?: number;
@@ -32,11 +50,16 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 const Payroll: React.FC = () => {
-  const [staffName, setStaffName] = useState('');
-  const [payrollData, setPayrollData] = useState<PayrollSummary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [departments, setDepartments] = useState<Departement[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [payrolls, setPayrolls] = useState<Record<string, PayrollSummary>>({});
+  
+  const [selectedDeptId, setSelectedDeptId] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
+  
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [rowLoading, setRowLoading] = useState<Record<string, boolean>>({});
+  const [error, setError] = useState('');
 
   const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
   const API_BASE_URL = `${BASE_URL}/api/web`;
@@ -46,276 +69,283 @@ const Payroll: React.FC = () => {
     Authorization: `Bearer ${localStorage.getItem("authToken")}`,
   });
 
-  const handleGeneratePayroll = async () => {
-    if (!staffName.trim()) {
-      setError('Staff name is required');
-      return;
-    }
+  // --- 1. INITIAL FETCH (DEPARTMENTS & USERS) ---
+  useEffect(() => {
+    fetchInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    setLoading(true);
+  // --- 2. FETCH PAYROLL DATA WHEN DEPT OR DATE CHANGES ---
+  useEffect(() => {
+    if (selectedDeptId) {
+      fetchPayrollForDepartment(selectedDeptId);
+    }
+  }, [selectedDeptId, payDate]);
+
+  const fetchInitialData = async () => {
+    setGlobalLoading(true);
     setError('');
-    setPayrollData(null);
+    try {
+      // Pastikan backend Anda memiliki endpoint GET /departments dan GET /users
+      // Jika URL-nya berbeda, silakan sesuaikan string fetch di bawah ini.
+      const [deptRes, userRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/departements`, { headers: getHeaders() }).catch(() => null),
+        fetch(`${API_BASE_URL}/admin/users`, { headers: getHeaders() }).catch(() => null)
+      ]);
+
+      if (deptRes && deptRes.ok) {
+        const deptJson = await deptRes.json();
+        setDepartments(deptJson.data || []);
+      }
+      if (userRes && userRes.ok) {
+        const userJson = await userRes.json();
+        setUsers(userJson.data || []);
+      }
+    } catch (err: unknown) {
+      setError('Gagal memuat data awal departemen dan user.');
+    } finally {
+      setGlobalLoading(false);
+    }
+  };
+
+  const fetchPayrollForDepartment = async (deptId: string) => {
+    setGlobalLoading(true);
+    try {
+      const deptUsers = users.filter(u => String(u.staff_detail?.departement_id) === String(deptId));
+      const payrollRecords: Record<string, PayrollSummary> = {};
+
+      // Memanggil endpoint GET payroll untuk setiap user di departemen terpilih
+      await Promise.all(
+        deptUsers.map(async (user) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/payroll/summary?user_id=${user.user_id}&reference_date=${payDate}`, {
+              headers: getHeaders()
+            });
+            if (res.ok) {
+              const json = await res.json();
+              payrollRecords[user.user_id] = json.data;
+            }
+          } catch (e) {
+            console.error(`Gagal memuat payroll untuk ${user.name}`);
+          }
+        })
+      );
+
+      setPayrolls(payrollRecords);
+    } catch (err) {
+      setError('Terjadi kesalahan saat memuat data payroll departemen.');
+    } finally {
+      setGlobalLoading(false);
+    }
+  };
+
+  // --- 3. ACTIONS: GENERATE & PAY ---
+  const handleGeneratePayroll = async (user: User) => {
+    setRowLoading(prev => ({ ...prev, [user.user_id]: true }));
+    setError('');
 
     try {
       const response = await fetch(`${API_BASE_URL}/payroll/generate`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ name: staffName.trim(), pay_date: payDate }),
+        body: JSON.stringify({ name: user.name, pay_date: payDate }),
       });
 
       const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to generate payroll');
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to generate payroll');
-      }
-
-      setPayrollData(result.data);
+      // Update state untuk row tersebut menjadi generated
+      setPayrolls(prev => ({
+        ...prev,
+        [user.user_id]: { ...result.data, hasPayroll: true }
+      }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred while generating payroll';
-      setError(message);
+      const message = err instanceof Error ? err.message : 'Error generating payroll';
+      setError(`${user.name}: ${message}`);
     } finally {
-      setLoading(false);
+      setRowLoading(prev => ({ ...prev, [user.user_id]: false }));
     }
   };
 
-  const handleMarkPaid = async () => {
-    if (!staffName.trim()) {
-      setError('Staff name is required');
-      return;
-    }
-
-    setLoading(true);
+  const handleMarkPaid = async (userId: string) => {
+    setRowLoading(prev => ({ ...prev, [userId]: true }));
     setError('');
 
     try {
       const response = await fetch(`${API_BASE_URL}/payroll/pay`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ user_id: payrollData?.user_id ?? staffName.trim(), pay_date: payDate }),
+        body: JSON.stringify({ user_id: userId, pay_date: payDate }),
       });
 
       const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Failed to mark payroll as paid');
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to mark payroll as paid');
-      }
-
-      setPayrollData((current) => ({
-        ...current,
-        ...result.data,
-        payment_status: 'paid',
+      // Update state untuk row tersebut menjadi paid
+      setPayrolls(prev => ({
+        ...prev,
+        [userId]: { ...prev[userId], ...result.data, payment_status: 'paid' }
       }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An error occurred while marking payroll as paid';
-      setError(message);
+      const message = err instanceof Error ? err.message : 'Error marking as paid';
+      setError(`Gagal memproses pembayaran: ${message}`);
     } finally {
-      setLoading(false);
+      setRowLoading(prev => ({ ...prev, [userId]: false }));
     }
   };
+
+  // --- RENDER HELPERS ---
+  const filteredUsers = users.filter((u) => u.staff_detail?.departement_id === selectedDeptId);
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc', px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
       <Navbar />
-      <Box sx={{ maxWidth: { xs: '100%', md: 1040, lg: 1180 }, mx: 'auto', mt: 2 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: '1.6fr 1fr' },
-            gap: { xs: 2, md: 3 },
-            alignItems: 'stretch',
-          }}
-        >
-          {/* Left column: title + staff details */}
-          <Box>
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 3,
-                p: { xs: 2, md: 3 },
-                height: '100%',
-              }}
+      <Box sx={{ maxWidth: { xs: '100%', md: 1200 }, mx: 'auto', mt: 2 }}>
+        
+        {/* HEADER SECTION */}
+        <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid #e2e8f0', borderRadius: 3, backgroundColor: '#ffffff' }}>
+          <Typography variant="h4" fontWeight={700} color="#0f172a" align="center">
+            PAYROLL MANAGEMENT 💰
+          </Typography>
+          <Typography variant="body1" color="text.secondary" align="center" sx={{ mt: 1, mb: 3 }}>
+            Pilih departemen untuk melihat status payroll, melakukan generate otomatis, dan mencetak gaji bersih karyawan.
+          </Typography>
+
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+            <TextField
+              select
+              label="Pilih Departemen"
+              value={selectedDeptId}
+              onChange={(e) => setSelectedDeptId(e.target.value)}
+              fullWidth
+              sx={{ bgcolor: '#fff' }}
+              InputProps={{ sx: { borderRadius: 2 } }}
             >
-              <Stack spacing={3} sx={{ height: '100%' }}>
-                <Box>
-                  <Typography variant="h4" fontWeight={700} color="#0f172a" align="center">
-                    PAYROLL 💰
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" align="center" sx={{ mt: 1, maxWidth: 720, mx: 'auto' }}>
-                    Calculate staff salary automatically and view the payment date. Enter staff name, base salary, penalty, reimbursement, and leave to see the net salary amount.
-                  </Typography>
-                </Box>
+              <MenuItem value="" disabled>
+                <em>-- Pilih Departemen --</em>
+              </MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.departement_id} value={dept.departement_id}>
+                  {dept.company_name}
+                </MenuItem>
+              ))}
+            </TextField>
 
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle1" fontWeight={700} color="#0f172a" mb={1.5}>
-                    Staff Details
-                  </Typography>
+            <TextField
+              label="Tanggal Referensi / Gaji"
+              type="date"
+              value={payDate}
+              onChange={(e) => setPayDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+              InputProps={{ sx: { borderRadius: 2 } }}
+            />
+          </Stack>
+        </Paper>
 
-                  <TextField
-                    label="Staff Name"
-                    value={staffName}
-                    onChange={(event) => setStaffName(event.target.value)}
-                    fullWidth
-                    InputProps={{ sx: { borderRadius: 2 } }}
-                    sx={{ mb: 2 }}
-                  />
+        {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-                  <TextField
-                    label="Payment Date"
-                    type="date"
-                    value={payDate}
-                    onChange={(event) => setPayDate(event.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    fullWidth
-                    InputProps={{ sx: { borderRadius: 2 } }}
-                    sx={{ mb: 2.5 }}
-                  />
-
-                  <Button
-                    variant="contained"
-                    onClick={handleGeneratePayroll}
-                    disabled={loading}
-                    fullWidth
-                    size="large"
-                    sx={{
-                      py: 1.4,
-                      borderRadius: 2,
-                      fontWeight: 600,
-                      textTransform: "none",
-                      bgcolor: "#2563eb",
-                      boxShadow: "none",
-                      "&:hover": { bgcolor: "#1d4ed8", boxShadow: "none" },
-                    }}
-                  >
-                    {loading ? 'Generating...' : 'Generate Payroll'}
-                  </Button>
-
-                  {payrollData && payrollData.payment_status !== 'paid' && (
-                    <Button
-                      variant="outlined"
-                      color="success"
-                      onClick={handleMarkPaid}
-                      disabled={loading}
-                      fullWidth
-                      size="large"
-                      sx={{
-                        mt: 1.5,
-                        py: 1.4,
-                        borderRadius: 2,
-                        fontWeight: 600,
-                        textTransform: "none",
-                      }}
-                    >
-                      {loading ? 'Processing...' : 'Mark as Paid on 28'}
-                    </Button>
-                  )}
-
-                  {error && <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{error}</Alert>}
-                </Box>
-              </Stack>
-            </Paper>
+        {/* DATA TABLE SECTION */}
+        <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden', backgroundColor: '#ffffff' }}>
+          <Box sx={{ p: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle1" fontWeight={700} color="#0f172a">
+              Daftar Gaji Staf
+            </Typography>
+            {globalLoading && <Typography variant="caption" color="primary">Memuat data...</Typography>}
           </Box>
 
-          {/* Right column: payroll summary */}
-          <Box>
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: 3,
-                p: { xs: 2, md: 3 },
-                minHeight: { xs: 280, md: 360 },
-              }}
-            >
-              <Typography variant="subtitle1" fontWeight={700} color="#0f172a" mb={2} align="center">
-                PAYROLL SUMMARY
-              </Typography>
+          <TableContainer>
+            <Table>
+              <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Nama Staf</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status Data</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Total Gaji Bersih (Net)</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="center">Aksi / Pembayaran</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => {
+                    const data = payrolls[user.user_id];
+                    const isGenerated = data?.hasPayroll === true;
+                    const isPaid = data?.payment_status === 'paid';
+                    const isLoading = rowLoading[user.user_id] || false;
 
-              {payrollData ? (
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      STAFF NAME
-                    </Typography>
-                    <Typography variant="body1" fontWeight={600} color="#0f172a">{payrollData.staff_name || '-'}</Typography>
-                  </Box>
+                    return (
+                      <TableRow key={user.user_id} hover>
+                        {/* 1. NAMA STAF */}
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600} color="#0f172a">
+                            {user.name}
+                          </Typography>
+                        </TableCell>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      PAYMENT DATE
-                    </Typography>
-                    <Typography variant="body1" color="#0f172a">{payDate}</Typography>
-                  </Box>
+                        {/* 2. STATUS GENERATE */}
+                        <TableCell>
+                          {isGenerated ? (
+                            <Chip label="Ready" color="success" size="small" variant="outlined" />
+                          ) : (
+                            <Chip label="Belum Digenerate" color="warning" size="small" variant="outlined" />
+                          )}
+                        </TableCell>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      PAYROLL PERIOD
-                    </Typography>
-                    <Typography variant="body1" color="#0f172a">{payrollData.payroll_period_label || '-'}</Typography>
-                  </Box>
+                        {/* 3. TOTAL GAJI */}
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={700} color="#0f172a">
+                            {isGenerated ? formatCurrency(data?.final_salary || 0) : '-'}
+                          </Typography>
+                        </TableCell>
 
-                  <Divider />
+                        {/* 4. TOMBOL AKSI */}
+                        <TableCell align="center">
+                          {!isGenerated ? (
+                            // JIKA BELUM GENERATE
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              disabled={isLoading || globalLoading}
+                              onClick={() => handleGeneratePayroll(user)}
+                              sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
+                            >
+                              {isLoading ? 'Generating...' : 'Generate Payroll'}
+                            </Button>
+                          ) : isPaid ? (
+                            // JIKA SUDAH DIBAYAR
+                            <Chip label="Done" color="success" sx={{ fontWeight: 700, px: 2 }} />
+                          ) : (
+                            // JIKA SUDAH GENERATE TAPI BELUM DIBAYAR
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              size="small"
+                              disabled={isLoading || globalLoading}
+                              onClick={() => handleMarkPaid(user.user_id)}
+                              sx={{ textTransform: 'none', borderRadius: 2, fontWeight: 600 }}
+                            >
+                              {isLoading ? 'Processing...' : 'Mark as Paid'}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 5 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        {selectedDeptId 
+                          ? "Tidak ada data staf pada departemen ini." 
+                          : "Silakan pilih departemen terlebih dahulu untuk melihat data staf."}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
 
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      CURRENT SALARY
-                    </Typography>
-                    <Typography variant="body1" color="#0f172a">{formatCurrency(payrollData.base_salary || 0)}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      PAYMENT STATUS
-                    </Typography>
-                    <Typography variant="body1" sx={{ color: payrollData.payment_status === 'paid' ? 'success.main' : 'warning.main', fontWeight: 600 }}>
-                      {payrollData.payment_status === 'paid' ? 'Paid' : 'Unpaid'}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      PENALTY
-                    </Typography>
-                    <Typography variant="body1" color="error.main">-{formatCurrency(payrollData.total_penalty || 0)}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      REIMBURSE
-                    </Typography>
-                    <Typography variant="body1" color="success.main">+{formatCurrency(payrollData.total_reimburse || 0)}</Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      LEAVE DEDUCTION ({payrollData.leave_days || 0} days)
-                    </Typography>
-                    <Typography variant="body1" color="error.main">-{formatCurrency(payrollData.leave_deduction || 0)}</Typography>
-                  </Box>
-
-                  <Divider />
-
-                  <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      NET SALARY TOTAL
-                    </Typography>
-                    <Typography variant="h5" fontWeight={700} color="#0f172a" mt={0.5}>
-                      {formatCurrency(payrollData.final_salary || 0)}
-                    </Typography>
-                  </Box>
-                </Stack>
-              ) : (
-                <Box display="flex" alignItems="center" justifyContent="center" height="240px">
-                  <Typography variant="body2" color="text.secondary" align="center">
-                    Enter staff name and click Generate Payroll to view summary.
-                  </Typography>
-                </Box>
-              )}
-            </Paper>
-          </Box>
-        </Box>
       </Box>
     </Box>
   );
