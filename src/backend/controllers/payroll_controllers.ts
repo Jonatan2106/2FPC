@@ -134,7 +134,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
   try {
     const { name, pay_date } = req.body as { name?: string; pay_date?: string };
     const adminId = (req as any).user?.userId || (req as any).user?.id;
-    const adminName = (req as any).user?.username || "Admin";
+    const adminName = (req as any).user?.name || "Admin";
     if (!name) {
       return res.status(400).json({ message: "name is required" });
     }
@@ -320,7 +320,7 @@ export const markPayrollPaid = async (req: Request, res: Response) => {
   try {
     const { user_id, pay_date } = req.body as { user_id?: string; pay_date?: string };
     const adminId = (req as any).user?.userId || (req as any).user?.id;
-    const adminName = (req as any).user?.username || "Admin";
+    const adminName = (req as any).user?.name || "Admin";
     if (!user_id) {
       return res.status(400).json({ message: "user_id is required" });
     }
