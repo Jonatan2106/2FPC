@@ -134,6 +134,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
   try {
     const { name, pay_date } = req.body as { name?: string; pay_date?: string };
     const adminId = (req as any).user?.userId || (req as any).user?.id;
+    const adminName = (req as any).user?.username || "Admin";
     if (!name) {
       return res.status(400).json({ message: "name is required" });
     }
@@ -246,6 +247,7 @@ export const generatePayroll = async (req: Request, res: Response) => {
         paidAt: payrollData.paidAt ?? null,
         payment_status: payrollData.paidAt ? "paid" : "unpaid",
         breakdown: payrollComputation.breakdown,
+        generated_by: adminName,
       },
     });
   } catch (error) {
@@ -317,7 +319,8 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
 export const markPayrollPaid = async (req: Request, res: Response) => {
   try {
     const { user_id, pay_date } = req.body as { user_id?: string; pay_date?: string };
-    const adminId = (req as any).user?.user_id || (req as any).user?.id;
+    const adminId = (req as any).user?.userId || (req as any).user?.id;
+    const adminName = (req as any).user?.username || "Admin";
     if (!user_id) {
       return res.status(400).json({ message: "user_id is required" });
     }
@@ -346,6 +349,7 @@ export const markPayrollPaid = async (req: Request, res: Response) => {
         ...mapPayrollRecord(updatedPayroll),
         payment_status: "paid",
         paidAt: updatedPayroll.paidAt,
+        paid_by: adminName,
       },
     });
   } catch (error) {
