@@ -20,9 +20,9 @@ import Navbar from '../../common/Navbar';
 
 // --- TYPES ---
 type Departement = { departement_id: string; company_name: string };
-type User = { 
-  user_id: string; 
-  name: string; 
+type User = {
+  user_id: string;
+  name: string;
   staff_detail?: {
     departement_id?: string;
   };
@@ -55,10 +55,10 @@ const Payroll: React.FC = () => {
   const [departments, setDepartments] = useState<Departement[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [payrolls, setPayrolls] = useState<Record<string, PayrollSummary>>({});
-  
+
   const [selectedDeptId, setSelectedDeptId] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
-  
+
   const [globalLoading, setGlobalLoading] = useState(false);
   const [rowLoading, setRowLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState('');
@@ -155,7 +155,7 @@ const Payroll: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/payroll/generate`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ name: user.name, pay_date: payDate, generate_by: currentAdminId }), 
+        body: JSON.stringify({ name: user.name, pay_date: payDate, generate_by: currentAdminId }),
       });
 
       const result = await response.json();
@@ -175,13 +175,13 @@ const Payroll: React.FC = () => {
   };
 
   const handleMarkPaid = async (userId: string) => {
-    const adminProfileStr = localStorage.getItem('userProfile');
-    const adminProfile = adminProfileStr ? JSON.parse(adminProfileStr) : {};
-    const currentAdminId = adminProfile.user_id || adminProfile.id;
     setRowLoading(prev => ({ ...prev, [userId]: true }));
     setError('');
 
     try {
+      const adminProfileStr = localStorage.getItem('user');
+      const adminProfile = adminProfileStr ? JSON.parse(adminProfileStr) : {};
+      const currentAdminId = adminProfile.user_id || adminProfile.id;
       const response = await fetch(`${API_BASE_URL}/payroll/pay`, {
         method: 'POST',
         headers: getHeaders(),
@@ -211,7 +211,7 @@ const Payroll: React.FC = () => {
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc', px: { xs: 1.5, sm: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
       <Navbar />
       <Box sx={{ maxWidth: { xs: '100%', md: 1200 }, mx: 'auto', mt: 2 }}>
-        
+
         {/* HEADER SECTION */}
         <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid #e2e8f0', borderRadius: 3, backgroundColor: '#ffffff' }}>
           <Typography variant="h4" fontWeight={700} color="#0f172a" align="center">
@@ -273,7 +273,7 @@ const Payroll: React.FC = () => {
                   <TableCell sx={{ fontWeight: 600 }}>Status Data</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Total Gaji Bersih (Net)</TableCell>
                   {/* TAMBAHAN KOLOM INFO PROSES */}
-                  <TableCell sx={{ fontWeight: 600 }}>Info Proses</TableCell> 
+                  <TableCell sx={{ fontWeight: 600 }}>Info Proses</TableCell>
                   <TableCell sx={{ fontWeight: 600 }} align="center">Aksi / Pembayaran</TableCell>
                 </TableRow>
               </TableHead>
@@ -315,11 +315,11 @@ const Payroll: React.FC = () => {
                           {isGenerated ? (
                             <Box>
                               <Typography variant="caption" display="block" color="text.secondary">
-                                <b>Gen:</b> {data?.generated_by || 'Sistem'}
+                                <b>Gen:</b> {data?.generated_by}
                               </Typography>
                               {isPaid && (
                                 <Typography variant="caption" display="block" color="success.main">
-                                  <b>Paid:</b> {data?.paid_by || 'Sistem'}
+                                  <b>Paid:</b> {data?.paid_by}
                                 </Typography>
                               )}
                             </Box>
@@ -364,10 +364,10 @@ const Payroll: React.FC = () => {
                 ) : (
                   <TableRow>
                     {/* colSpan diubah menjadi 5 karena ada tambahan kolom Info Proses */}
-                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}> 
+                    <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
                       <Typography variant="body2" color="text.secondary">
-                        {selectedDeptId 
-                          ? "Tidak ada data staf pada departemen ini." 
+                        {selectedDeptId
+                          ? "Tidak ada data staf pada departemen ini."
                           : "Silakan pilih departemen terlebih dahulu untuk melihat data staf."}
                       </Typography>
                     </TableCell>
