@@ -38,6 +38,7 @@ type PayrollSummary = {
   leave_days?: number;
   leave_deduction?: number;
   final_salary?: number;
+  total_income?: number;
   payroll_period_label?: string;
   payment_status?: 'paid' | 'unpaid';
   generated_by?: string;
@@ -55,6 +56,10 @@ const Payroll: React.FC = () => {
   const [departments, setDepartments] = useState<Departement[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [payrolls, setPayrolls] = useState<Record<string, PayrollSummary>>({});
+
+  const userStr = localStorage.getItem('user');
+  const loggedInUser = userStr ? JSON.parse(userStr) : null;
+  const currentUserName = loggedInUser?.name || 'Admin';
 
   const [selectedDeptId, setSelectedDeptId] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -306,7 +311,7 @@ const Payroll: React.FC = () => {
                         {/* 3. TOTAL GAJI */}
                         <TableCell>
                           <Typography variant="body2" fontWeight={700} color="#0f172a">
-                            {isGenerated ? formatCurrency(data?.final_salary || 0) : '-'}
+                            {isGenerated ? formatCurrency(data?.final_salary || data?.total_income || 0) : '-'}
                           </Typography>
                         </TableCell>
 
@@ -315,11 +320,11 @@ const Payroll: React.FC = () => {
                           {isGenerated ? (
                             <Box>
                               <Typography variant="caption" display="block" color="text.secondary">
-                                <b>Gen:</b> {data?.generated_by}
+                                <b>Gen:</b> {data?.generated_by|| "Admin"}
                               </Typography>
                               {isPaid && (
                                 <Typography variant="caption" display="block" color="success.main">
-                                  <b>Paid:</b> {data?.paid_by}
+                                  <b>Paid:</b> {data?.paid_by || currentUserName || "Admin"}
                                 </Typography>
                               )}
                             </Box>

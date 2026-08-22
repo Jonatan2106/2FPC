@@ -223,18 +223,21 @@ export const generatePayroll = async (req: Request, res: Response) => {
       generated_by: adminId,
     };
 
-    console.log("1. ISI TOKEN USER:", (req as any).user);
-    console.log("2. ADMIN ID YANG DIDAPAT:", adminId);
-    console.log("3. PAYLOAD YANG DIKIRIM KE DB:", payload.generated_by);
-
     const payrollData = existingPayroll
       ? await existingPayroll.update(payload)
       : await Payroll.create(payload);
 
+    const freshPayrollRecord = await Payroll.findOne({
+      where: { payroll_id: payrollData.payroll_id },
+      include: [
+        { model: User, as: 'generator', attributes: ['name'] },
+        { model: User, as: 'payer', attributes: ['name'] }
+      ]
+    });
     return res.status(201).json({
       message: "Payroll generated as unpaid",
       data: {
-        ...mapPayrollRecord(payrollData),
+        ...mapPayrollRecord(freshPayrollRecord || payrollData),
         user_id,
         staff_name: name,
         base_salary: baseSalary,
@@ -359,10 +362,17 @@ export const markPayrollPaid = async (req: Request, res: Response) => {
     }
 
     const updatedPayroll = await payrollRecord.update({ paidAt: new Date(), paid_by: adminId });
+    const freshPayrollRecord = await Payroll.findOne({
+      where: { payroll_id: payrollRecord.payroll_id },
+      include: [
+        { model: User, as: 'generator', attributes: ['name'] },
+        { model: User, as: 'payer', attributes: ['name'] }
+      ]
+    });
     return res.status(200).json({
       message: "Payroll marked as paid",
       data: {
-        ...mapPayrollRecord(updatedPayroll),
+        ...mapPayrollRecord(freshPayrollRecord || updatedPayroll),
         payment_status: "paid",
         paidAt: updatedPayroll.paidAt,
         paid_by: adminName,
