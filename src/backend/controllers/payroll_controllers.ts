@@ -223,6 +223,10 @@ export const generatePayroll = async (req: Request, res: Response) => {
       generated_by: adminId,
     };
 
+    console.log("1. ISI TOKEN USER:", (req as any).user);
+    console.log("2. ADMIN ID YANG DIDAPAT:", adminId);
+    console.log("3. PAYLOAD YANG DIKIRIM KE DB:", payload.generated_by);
+
     const payrollData = existingPayroll
       ? await existingPayroll.update(payload)
       : await Payroll.create(payload);

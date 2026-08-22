@@ -150,7 +150,7 @@ const Payroll: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/payroll/generate`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ name: user.name, pay_date: payDate }),
+        body: JSON.stringify({ name: user.name, pay_date: payDate, generate_by: user.user_id }), 
       });
 
       const result = await response.json();
