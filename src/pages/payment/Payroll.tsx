@@ -147,10 +147,15 @@ const Payroll: React.FC = () => {
     setError('');
 
     try {
+      const adminProfileStr = localStorage.getItem('user'); // Sesuaikan dengan key Anda
+      const adminProfile = adminProfileStr ? JSON.parse(adminProfileStr) : {};
+
+      const currentAdminId = adminProfile.user_id || adminProfile.id;
+
       const response = await fetch(`${API_BASE_URL}/payroll/generate`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ name: user.name, pay_date: payDate, generate_by: user.user_id }), 
+        body: JSON.stringify({ name: user.name, pay_date: payDate, generate_by: currentAdminId }), 
       });
 
       const result = await response.json();
@@ -170,6 +175,9 @@ const Payroll: React.FC = () => {
   };
 
   const handleMarkPaid = async (userId: string) => {
+    const adminProfileStr = localStorage.getItem('userProfile');
+    const adminProfile = adminProfileStr ? JSON.parse(adminProfileStr) : {};
+    const currentAdminId = adminProfile.user_id || adminProfile.id;
     setRowLoading(prev => ({ ...prev, [userId]: true }));
     setError('');
 
@@ -177,7 +185,7 @@ const Payroll: React.FC = () => {
       const response = await fetch(`${API_BASE_URL}/payroll/pay`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ user_id: userId, pay_date: payDate }),
+        body: JSON.stringify({ user_id: userId, pay_date: payDate, paid_by: currentAdminId }),
       });
 
       const result = await response.json();

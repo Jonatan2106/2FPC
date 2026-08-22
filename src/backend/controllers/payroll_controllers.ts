@@ -132,9 +132,9 @@ const mapPayrollRecord = (payrollRecord: any) => {
 
 export const generatePayroll = async (req: Request, res: Response) => {
   try {
-    const { name, pay_date } = req.body as { name?: string; pay_date?: string };
-    const adminId = (req as any).user?.userId || (req as any).user?.id;
-    const adminName = (req as any).user?.name || "Admin";
+    const { name, pay_date, generate_by } = req.body as { name?: string; pay_date?: string; generate_by?: string };
+    const adminId = generate_by || (req as any).user?.userId || (req as any).user?.id;
+    const adminName = (req as any).user?.username || (req as any).user?.name || "Admin";
     if (!name) {
       return res.status(400).json({ message: "name is required" });
     }
