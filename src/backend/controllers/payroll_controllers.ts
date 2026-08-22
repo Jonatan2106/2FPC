@@ -125,8 +125,8 @@ const mapPayrollRecord = (payrollRecord: any) => {
     breakdown: record.breakdown,
     paidAt: record.paidAt,
     createdAt: record.createdAt,
-    generated_by: record.username || null,
-    paid_by: record.username || null,
+    generated_by: (record.generator as any)?.name || null,
+    paid_by: (record.payer as any)?.name || null,
   };
 };
 
@@ -279,6 +279,18 @@ export const getPayrollSummary = async (req: Request, res: Response) => {
         user_id: userId,
         payroll_period_key: period.key,
       },
+      include: [
+        {
+          model: User,
+          as: 'generator', 
+          attributes: ['name'],
+        },
+        {
+          model: User,
+          as: 'payer',
+          attributes: ['name'],
+        },
+      ],
     });
 
     const targetUser = await User.findByPk(userId);

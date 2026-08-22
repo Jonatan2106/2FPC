@@ -107,7 +107,7 @@ export class payroll extends Model {
     })
     declare user_data: user;
 
-    @ForeignKey(() => user) // Asumsi nama model user Anda adalah User
+    @ForeignKey(() => user)
     @Column({ type: DataType.UUID, allowNull: true })
     declare generated_by: string | null;
 
